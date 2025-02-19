@@ -42,6 +42,11 @@ can_replace_bot(player_id){
     return true;
 }
 
+new g_player_id;
+public spawn_player() {
+    SpawnPlayer(g_player_id);
+}
+
 public letmeplay(player_id) {
     if(!can_replace_bot(player_id))
 		return PLUGIN_CONTINUE;
@@ -49,7 +54,9 @@ public letmeplay(player_id) {
     new bot_id = entity_get_int(player_id, EV_INT_iuser2);
     
     entity_set_int(player_id, EV_INT_iuser1, 0);
-    SpawnPlayer(player_id);
+
+    g_player_id = player_id;
+    GameContext(GetEntityOwner(player_id), "spawn_player");
 
     new Float:origin[3];
     entity_get_vector(bot_id, EV_VEC_origin, origin);
