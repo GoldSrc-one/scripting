@@ -1,5 +1,6 @@
 #include <amxmodx>
 #include <fun>
+#include <engine>
 
 #include "crossplay"
 
@@ -30,6 +31,29 @@ public logevent_round_start() {
 give_item_times(player_id, const item[], times) {
     for(new i = 0; i < times; i++)
         give_item(player_id, item);
+}
+
+new g_player_equip = -1;
+
+public add_equip_prevention() {
+    if(g_player_equip != -1)
+        remove_entity(g_player_equip);
+
+    g_player_equip = create_entity("game_player_equip");
+}
+
+public PrePlayerSpawn(player_id) {
+    if(!is_user_connected(player_id))
+        return;
+
+    GameContext(GetEntityOwner(player_id), "add_equip_prevention");
+}
+
+public remove_equip_prevention() {
+    if(g_player_equip != -1)
+        remove_entity(g_player_equip);
+
+    g_player_equip = -1;
 }
 
 new g_player_id;
@@ -117,9 +141,14 @@ public equip_cstrike() {
 }
 
 public PostPlayerSpawn(player_id) {
+    if(!is_user_connected(player_id))
+        return;
+
     g_player_id = player_id;
 
     new game = GetEntityOwner(player_id);
+    GameContext(game, "remove_equip_prevention");
+
     if(game == g_valve)
         GameContext(game, "equip_valve");
     
