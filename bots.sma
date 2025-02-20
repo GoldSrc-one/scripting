@@ -40,14 +40,14 @@ public plugin_init() {
 public bots_menu(player_id) {
     new menu = menu_create("Bots menu", "bots_menu_handler");
     menu_additem(menu, "Kill all bots");
-    new changeBotCount[32];
-    format(changeBotCount, 32, "Change max bot count (now: %d)", get_pcvar_num(g_bots_max));
+    new changeBotCount[64];
+    format(changeBotCount, 64, "Change max bot count (now: %d)", get_pcvar_num(g_bots_max));
     menu_additem(menu, changeBotCount);
-    new changeBotDifficulty[32];
-    format(changeBotDifficulty, 32, "Change bot difficulty (now: %s)", g_difficulties[get_pcvar_num(g_bot_difficulty)]);
+    new changeBotDifficulty[64];
+    format(changeBotDifficulty, 64, "Change bot difficulty (now: %s)", g_difficulties[get_pcvar_num(g_bot_difficulty)]);
     menu_additem(menu, changeBotDifficulty);
-    new melee[32];
-    format(melee, 32, "Crowbars vs knives (now: %s)", get_pcvar_num(g_bots_melee) ? "On" : "Off");
+    new melee[64];
+    format(melee, 64, "Crowbars vs knives (now: %s)", get_pcvar_num(g_bots_melee) ? "On" : "Off");
     menu_additem(menu, melee);
     menu_display(player_id, menu);    
     return PLUGIN_HANDLED;
@@ -74,8 +74,8 @@ public bots_menu_handler(player_id, menu, item) {
         }
     }
     if(item == 1) {
-        new changeBotCount[32];
-        format(changeBotCount, 32, "Change max bot count (%d)", get_pcvar_num(g_bots_max));
+        new changeBotCount[64];
+        format(changeBotCount, 64, "Change max bot count (%d)", get_pcvar_num(g_bots_max));
         menu = menu_create(changeBotCount, "bot_count_handler");
         for(new i = 0; i <= (get_maxplayers()/4)*3; i += 4) {
             new botCount[4];
@@ -85,8 +85,8 @@ public bots_menu_handler(player_id, menu, item) {
         menu_display(player_id, menu);
     }
     if(item == 2) {
-        new changeBotDifficulty[32];
-        format(changeBotDifficulty, 32, "Change bot difficulty (%s)", g_difficulties[get_pcvar_num(g_bot_difficulty)]);
+        new changeBotDifficulty[64];
+        format(changeBotDifficulty, 64, "Change bot difficulty (%s)", g_difficulties[get_pcvar_num(g_bot_difficulty)]);
         menu = menu_create(changeBotDifficulty, "bot_difficulty_handler");
         for(new i = 0; i < 4; i++) {
             menu_additem(menu, g_difficulties[i]);
