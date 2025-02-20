@@ -8,13 +8,15 @@ public plugin_init() {
     register_clcmd("say letmeplay", "letmeplay");
     register_clcmd("say /letmeplay", "letmeplay");
     register_clcmd("say !letmeplay", "letmeplay");
-    register_clcmd("say ^"letmeplay^"", "letmeplay");
     
     set_task(0.5, "show_message", _, _, _, "b");
 }
 
 can_replace_bot(player_id){
-    if(!entity_get_int(player_id, EV_INT_deadflag))
+    if(!is_user_connected(player_id))
+        return false;
+
+    if(is_user_alive(player_id))
         return false;
 
     if(!entity_get_int(player_id, EV_INT_iuser1))
@@ -25,10 +27,10 @@ can_replace_bot(player_id){
     if(bot_id < 1 || bot_id > get_maxplayers())
         return false;
 
-    if(!(entity_get_int(bot_id, EV_INT_flags) & FL_FAKECLIENT))
+    if(!is_user_bot(bot_id))
         return false;
 
-    if(entity_get_int(bot_id, EV_INT_deadflag))
+    if(!is_user_alive(bot_id))
         return false;
 
     new player_team[16];
@@ -81,11 +83,11 @@ public letmeplay(player_id) {
 }
 
 public show_message() {
-    for(new player_id = 1; player_id < get_maxplayers(); player_id++) {
+    for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
         if(!can_replace_bot(player_id))
             continue;
 
         set_hudmessage(255, 127, 0, -1.0, 0.55, 0, 0.0, 0.5, 0.25, 0.25, -1);
-        show_hudmessage(player_id, "Say ^"letmeplay^" to respawn in place of this bot."); 
+        show_hudmessage(player_id, "Say /letmeplay to respawn in place of this bot."); 
     }
 }
