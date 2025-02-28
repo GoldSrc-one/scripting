@@ -1,11 +1,13 @@
 #include <amxmodx>
 #include <fun>
-#include <engine>
+#include <fakemeta>
+#include <fakemeta_util>
 
 #include "crossplay"
 
 new g_valve = -1;
 new g_cstrike = -1;
+new g_gearbox = -1;
 
 public plugin_init() {
     register_plugin("Equip", "0.0", "GoldSrc.one");
@@ -15,11 +17,31 @@ public plugin_init() {
         new gameName[16];
         GetGameName(i, gameName, 16);
 
-        if(strcmp(gameName, "valve") == 0)
+        if(equal(gameName, "valve"))
             g_valve = i;
 
-        if(strcmp(gameName, "cstrike") == 0)
+        if(equal(gameName, "cstrike") || equal(gameName, "czero"))
             g_cstrike = i;
+
+        if(equal(gameName, "gearbox"))
+            g_gearbox = i;
+    }
+
+    if(g_gearbox != -1) {
+        register_forward(FM_PlayerPostThink, "PlayerPostThinkPre", 0);
+        register_forward(FM_PlayerPostThink, "PlayerPostThinkPost", 1);
+        register_forward(FM_SetPhysicsKeyValue, "SetPhysicsKeyValuePost", 1);
+
+        GameContext(g_gearbox, "precache_gearbox_ctf_items");
+    }
+}
+
+public precache_gearbox_ctf_items(){
+    new ctfItems[][] = {"item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration", "item_ctfportablehev", "item_ctflongjump"};
+    for(new i = 0; i < sizeof ctfItems; i++) {
+        new item = fm_create_entity(ctfItems[i]);
+        fm_DispatchSpawn(item);
+        fm_remove_entity(item);
     }
 }
 
@@ -37,9 +59,9 @@ new g_player_equip = -1;
 
 public add_equip_prevention() {
     if(g_player_equip != -1)
-        remove_entity(g_player_equip);
+        fm_remove_entity(g_player_equip);
 
-    g_player_equip = create_entity("game_player_equip");
+    g_player_equip = fm_create_entity("game_player_equip");
 }
 
 public PrePlayerSpawn(player_id) {
@@ -51,7 +73,7 @@ public PrePlayerSpawn(player_id) {
 
 public remove_equip_prevention() {
     if(g_player_equip != -1)
-        remove_entity(g_player_equip);
+        fm_remove_entity(g_player_equip);
 
     g_player_equip = -1;
 }
@@ -115,19 +137,19 @@ equip_cstrike_ct() {
 public equip_cstrike() {
     strip_user_weapons(g_player_id);
 
-    if((g_round % 2) == 0) 
+    if((g_round % 2) == 0)
         give_item(g_player_id, "item_assaultsuit");
 
-    if((g_round % 3) == 0) 
+    if((g_round % 3) == 0)
         give_item(g_player_id, "item_longjump");
 
     new player_team[16];
     get_user_team(g_player_id, player_team, 16);
 
-    if(strcmp(player_team, "TERRORIST") == 0)
+    if(equal(player_team, "TERRORIST"))
         equip_cstrike_t();
 
-    if(strcmp(player_team, "CT") == 0)
+    if(equal(player_team, "CT"))
         equip_cstrike_ct();
 
     if(random(2))
@@ -138,6 +160,115 @@ public equip_cstrike() {
         give_item(g_player_id, "weapon_flashbang");
 
     give_item(g_player_id, "weapon_knife");
+}
+
+
+
+new g_equip_gearbox[33];
+new g_gearbox_ctf_items[33];
+
+public PlayerPostThinkPre(player_id) {
+    if(!g_equip_gearbox[player_id])
+        return FMRES_HANDLED;
+
+    if(pev(player_id, pev_impulse))
+        return FMRES_HANDLED;
+
+    set_pev(player_id, pev_impulse, 205);
+    return FMRES_HANDLED;
+}
+
+public PlayerPostThinkPost(player_id) {
+    if(!g_equip_gearbox[player_id])
+        return FMRES_HANDLED;
+
+    set_pev(player_id, pev_impulse, 0);
+    
+    g_player_id = player_id;
+    GameContext(g_gearbox, "equip_gearbox");
+    g_equip_gearbox[player_id] = 0;
+    return FMRES_HANDLED;
+}
+
+public remove_gearbox_ctf_item() {
+    new newItems[33];
+    for(new i = 1; i <= 32; i++) {
+        new item = g_gearbox_ctf_items[i];
+        if(!item)
+            continue;
+        
+        new itemOwner = pev(item, pev_owner);
+        if(!itemOwner) {
+            server_print("Deleted gearbox ctf item %d (player: %d)", item, i);
+            fm_remove_entity(item);
+        } else {
+            server_print("Reassigned gearbox ctf item %d (old: %d; new: %d)", item, i, itemOwner);
+            newItems[itemOwner] = item;
+        }
+    }
+
+    for(new i = 1; i <= 32; i++)
+        g_gearbox_ctf_items[i] = newItems[i];
+}
+
+public equip_gearbox_ctf_item() {
+    if(g_gearbox_ctf_items[g_player_id]) {
+        server_print("Player %d still has a gearbox ctf item %d! WHAT?", g_player_id, g_gearbox_ctf_items[g_player_id]);
+        return;
+    }
+    
+    new item = 0;
+    if((g_equip_gearbox[g_player_id] % 6) == 0) {
+        server_print("item_longjump + item_ctfportablehev");
+        give_item(g_player_id, "item_longjump");
+        item = give_item(g_player_id, "item_ctfportablehev");
+    } else if((g_equip_gearbox[g_player_id] % 3) == 0) {
+        server_print("item_ctflongjump");
+        item = give_item(g_player_id, "item_ctflongjump");
+    } else if((g_equip_gearbox[g_player_id] % 2) == 0) {
+        server_print("item_ctfportablehev");
+        item = give_item(g_player_id, "item_ctfportablehev");
+    } else {
+        new ctfItems[][] = {"item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration"};
+        new ctfItemIndex = random(sizeof ctfItems);
+        server_print("%s", ctfItems[ctfItemIndex]);
+        item = give_item(g_player_id, ctfItems[ctfItemIndex]);
+    }
+    
+    if(item > 0) {
+        server_print("Equiped player %d with gearbox ctf item %d", g_player_id, item);
+        g_gearbox_ctf_items[g_player_id] = item;
+    }
+}
+
+public SetPhysicsKeyValuePost(entity, const key[], const value[]) {
+	if(equal(key, "jpj"))
+		engfunc(EngFunc_SetPhysicsKeyValue, entity, "slj", value);
+}
+
+public equip_gearbox() {
+    remove_gearbox_ctf_item();
+    strip_user_weapons(g_player_id);
+    equip_gearbox_ctf_item();
+
+    new specials[][] = {"weapon_m249", "weapon_displacer", "weapon_sniperrifle"};
+    new specialIndex = random(sizeof specials);
+    give_item_times(g_player_id, specials[specialIndex], 5);
+
+    new xrace[][] = {"weapon_sporelauncher", "weapon_shockrifle"};
+    new xraceIndex = random(sizeof xrace);
+    give_item_times(g_player_id, xrace[xraceIndex], 5);
+
+    if(random(2))
+        give_item(g_player_id, "weapon_penguin");
+
+    give_item_times(g_player_id, "weapon_eagle", 7);
+
+    new melees[][] = {"weapon_pipewrench", "weapon_pipewrench", "weapon_knife", "weapon_grapple"};
+    new meleeIndex = random(sizeof melees);
+    give_item(g_player_id, melees[meleeIndex]);
+
+    return FMRES_HANDLED;
 }
 
 public PostPlayerSpawn(player_id) {
@@ -154,6 +285,9 @@ public PostPlayerSpawn(player_id) {
     
     if(game == g_cstrike)
         GameContext(game, "equip_cstrike");
+
+    if(game == g_gearbox)
+        g_equip_gearbox[g_player_id] = g_round;
         
     if((g_round % 6) == 0) 
         client_print(player_id, print_chat, "ARMORED + LONG JUMP ROUND!");

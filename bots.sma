@@ -26,15 +26,15 @@ public plugin_init() {
         new gameName[16];
         GetGameName(i, gameName, 16);
 
-        if(strcmp(gameName, "valve") == 0)
+        if(equal(gameName, "valve"))
             g_valve = i;
 
-        if(strcmp(gameName, "cstrike") == 0)
+        if(equal(gameName, "cstrike"))
             g_cstrike = i;
     }
     
     if(g_valve == -1 || g_cstrike == -1)
-        set_fail_state("valve + cstrike expected!")
+        set_fail_state("valve + cstrike expected!");
 }
 
 public bots_menu(player_id) {

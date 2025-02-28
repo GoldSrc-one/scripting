@@ -38,7 +38,7 @@ can_replace_bot(player_id){
 
     new bot_team[16];
     get_user_team(bot_id, bot_team, 16);
-    if(!(strcmp(player_team, bot_team) == 0))
+    if(!equal(player_team, bot_team))
         return false;
 
     return true;
