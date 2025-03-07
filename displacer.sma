@@ -31,9 +31,9 @@ public ThinkPost(entity) {
 }
 
 public TouchPre(touched, other) {
-    new classname[24]
+    new classname[24];
     pev(touched, pev_classname, classname, 24);
-    if(equal(classname, "weapon_displacer")) {
+    if(equal(classname, "displacer_ball")) {
         g_displacer = true;
         g_player_id = other;
     }
