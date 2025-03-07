@@ -51,7 +51,7 @@ public spawn_player() {
 
 public letmeplay(player_id) {
     if(!can_replace_bot(player_id))
-		return PLUGIN_CONTINUE;
+		return PLUGIN_HANDLED;
         
     new bot_id = entity_get_int(player_id, EV_INT_iuser2);
     
