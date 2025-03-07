@@ -187,6 +187,7 @@ public PlayerPostThinkPost(player_id) {
     g_player_id = player_id;
     GameContext(g_gearbox, "equip_gearbox");
     g_equip_gearbox[player_id] = 0;
+
     return FMRES_HANDLED;
 }
 
@@ -219,19 +220,15 @@ public equip_gearbox_ctf_item() {
     
     new item = 0;
     if((g_equip_gearbox[g_player_id] % 6) == 0) {
-        server_print("item_longjump + item_ctfportablehev");
         give_item(g_player_id, "item_longjump");
         item = give_item(g_player_id, "item_ctfportablehev");
     } else if((g_equip_gearbox[g_player_id] % 3) == 0) {
-        server_print("item_ctflongjump");
         item = give_item(g_player_id, "item_ctflongjump");
     } else if((g_equip_gearbox[g_player_id] % 2) == 0) {
-        server_print("item_ctfportablehev");
         item = give_item(g_player_id, "item_ctfportablehev");
     } else {
         new ctfItems[][] = {"item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration"};
         new ctfItemIndex = random(sizeof ctfItems);
-        server_print("%s", ctfItems[ctfItemIndex]);
         item = give_item(g_player_id, ctfItems[ctfItemIndex]);
     }
     
