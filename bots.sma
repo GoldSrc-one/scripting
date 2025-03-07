@@ -10,6 +10,10 @@ new g_valve = -1;
 new g_cstrike = -1;
 new g_difficulties[][] = {"Easy", "Normal", "Hard", "Expert"}
 
+const g_bots_think_task = 1;
+const g_vote_menu_task = 100;
+const g_vote_action_task = 200;
+
 public plugin_init() {
     register_plugin("Bots", "0.0", "GoldSrc.one");
     register_clcmd("say bots", "bots_menu");
@@ -19,7 +23,7 @@ public plugin_init() {
     g_bots_melee = register_cvar("bots_melee", "0");
     g_bot_difficulty = get_cvar_pointer("bot_difficulty");    
     
-    set_task(1.0, "bots_think", _, _, _, "b");
+    set_task(1.0, "bots_think", g_bots_think_task, _, _, "b");
     register_clcmd("say", "bots_advertise");
 
     for(new i = 0; i < GetNumGames(); i++) {
@@ -35,6 +39,114 @@ public plugin_init() {
     
     if(g_valve == -1 || g_cstrike == -1)
         set_fail_state("valve + cstrike expected!");
+}
+
+stock bool:FALSE = false;
+#define ANNOUNCE(%0,%1,%2) \
+do { \
+    new player_name[64];\
+    get_user_name(%0, player_name, 64);\
+    log_message(%1, player_name, %2);\
+    client_print(0, print_chat, %1, player_name, %2);\
+} while(FALSE)
+
+new g_voting = false;
+new g_voters = 0;
+new g_voteYes = 0;
+new g_voteNo = 0;
+new g_voteMenu = 0;
+new g_voteAction[32];
+new g_votePlayerId = 0;
+new g_voteValue = 0;
+
+const maxBans = 32;
+new g_voteBanIDs[maxBans];
+new Float:g_voteBanTimes[maxBans];
+
+public vote_menu(player_id, menuTitle[], action[32]) {
+    if(g_voting) {
+        client_print(player_id, print_chat, "Cannot vote right now!");
+        return;
+    }
+
+    new userid =  get_user_userid(player_id);
+    new Float:time = get_gametime();
+    for(new i = 0; i < maxBans; i++) {
+        if(g_voteBanTimes[i] < time)
+            break;
+
+        if(g_voteBanIDs[i] == userid) {
+            client_print(player_id, print_chat, "You cannot vote in next %.0f seconds!", g_voteBanTimes[i] - time);
+            return;
+        }
+    }
+
+    new menu = menu_create(menuTitle, "vote_menu_handler");
+    menu_additem(menu, "Yes do it!");
+    menu_additem(menu, "No don't do it!");
+
+    g_voting = true;
+    g_voters = 0;
+    g_voteNo = 0;
+    g_voteYes = 0;
+    g_voteMenu = menu;
+    g_voteAction = action;
+    g_votePlayerId = player_id;
+
+    for(new i = 1; i <= get_maxplayers(); i++) {
+        if(!is_user_connected(i) || is_user_bot(i))
+            continue;
+        
+        if(i != player_id) {
+            menu_display(i, menu);
+            set_task(10.0, "vote_menu_cancel", g_vote_menu_task + i);
+        }        
+        
+        g_voters++;
+    }
+
+    if(g_voters > 1) {
+        client_print(player_id, print_chat, "You have started a vote.");
+    }
+
+    vote_menu_handler(player_id, menu, 0);
+}
+
+public vote_menu_handler(player_id, menu, item) {
+    remove_task(g_vote_menu_task + player_id);
+
+    if(item == 0) {
+        g_voteYes++;
+    }
+    if(item == 1) {
+        g_voteNo++;
+    }
+    g_voters--;
+
+    if(g_voters != 0)
+        return PLUGIN_HANDLED;
+        
+    g_voting = false;
+    menu_destroy(menu);
+
+    if(g_voteYes <= g_voteNo) {
+        client_print(g_votePlayerId, print_chat, "The vote failed, you will not be able to vote again for the next 5 minutes.");
+        for(new i = 1; i < maxBans; i++) {
+            g_voteBanIDs[i] = g_voteBanIDs[i - 1];
+            g_voteBanTimes[i] = g_voteBanTimes[i - 1];
+        }
+        g_voteBanIDs[0] = get_user_userid(g_votePlayerId);
+        g_voteBanTimes[0] = get_gametime() + 300.0;
+        return PLUGIN_HANDLED;
+    }
+
+    set_task(0.0, g_voteAction, g_vote_action_task);
+    return PLUGIN_HANDLED;
+}
+
+public vote_menu_cancel(task_id) {
+    show_menu(task_id - g_vote_menu_task, 0, "^n", 1 );
+    vote_menu_handler(task_id - g_vote_menu_task, g_voteMenu, MENU_EXIT);
 }
 
 public bots_menu(player_id) {
@@ -53,25 +165,14 @@ public bots_menu(player_id) {
     return PLUGIN_HANDLED;
 }
 
-stock bool:FALSE = false;
-#define ANNOUNCE(%0,%1,%2) \
-do { \
-    new player_name[64];\
-    get_user_name(%0, player_name, 64);\
-    log_message(%1, player_name, %2);\
-    client_print(0, print_chat, %1, player_name, %2);\
-} while(FALSE)
-
 public bots_menu_handler(player_id, menu, item) {
     menu_destroy(menu);
     if(item == 0) {
-        ANNOUNCE(player_id, "%s has killed all the bots", 0);
-        for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-            if(!is_user_connected(player_id) || !is_user_bot(player_id) || !is_user_alive(player_id))
-                continue;
-
-            user_kill(player_id, 1);
-        }
+        new playerName[64];
+        get_user_name(player_id, playerName, 64);
+        new menuTitle[256]
+        format(menuTitle, 256, "%s wants to kill all the bots.", playerName);
+        vote_menu(player_id, menuTitle, "kill_all_bots");
     }
     if(item == 1) {
         new changeBotCount[64];
@@ -94,19 +195,37 @@ public bots_menu_handler(player_id, menu, item) {
         menu_display(player_id, menu);
     }
     if(item == 3) {
-        new newMelee = 1 - get_pcvar_num(g_bots_melee);
-        ANNOUNCE(player_id, "%s has %s ^"crowbars vs knives^"", newMelee ? "enabled" : "disabled");
-        set_pcvar_num(g_bots_melee, newMelee);
+        new playerName[64];
+        get_user_name(player_id, playerName, 64);
+        new menuTitle[256]
+        format(menuTitle, 256, "%s wants to %s ^"crowbars vs knives^".", playerName, get_pcvar_num(g_bots_melee) ? "disable" : "enable");
+        vote_menu(player_id, menuTitle, "toggle_melee");
     }
     return PLUGIN_HANDLED;
+}
+
+public kill_all_bots() {
+    ANNOUNCE(g_votePlayerId, "%s has killed all the bots", 0);
+    for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
+        if(!is_user_connected(player_id) || !is_user_bot(player_id) || !is_user_alive(player_id))
+            continue;
+
+        user_kill(player_id, 1);
+    }
 }
 
 public bot_count_handler(player_id, menu, item) {
     menu_destroy(menu);
     if(item != MENU_EXIT) {
         new newCount = item * 4;
-        ANNOUNCE(player_id, "%s has changed the max bot count to %d", newCount);
-        set_pcvar_num(g_bots_max, newCount);
+
+        new playerName[64];
+        get_user_name(player_id, playerName, 64);
+        new menuTitle[256]
+        format(menuTitle, 256, "%s wants to change the max bot count to %d (now %d).", playerName, newCount, get_pcvar_num(g_bots_max));
+        g_voteValue = newCount;
+        vote_menu(player_id, menuTitle, "change_bots_max");
+
     }
     return PLUGIN_HANDLED;
 }
@@ -114,10 +233,31 @@ public bot_count_handler(player_id, menu, item) {
 public bot_difficulty_handler(player_id, menu, item) {
     menu_destroy(menu);
     if(item != MENU_EXIT) {
-        ANNOUNCE(player_id, "%s has changed the bot difficulty to %s, the bots will now reconnect", g_difficulties[item]);
-        set_pcvar_num(g_bot_difficulty, item);
+        new playerName[64];
+        get_user_name(player_id, playerName, 64);
+        new menuTitle[256]
+        format(menuTitle, 256, "%s wants to change the bot difficulty to %s (now %s).", playerName, g_difficulties[item], g_difficulties[get_pcvar_num(g_bot_difficulty)]);
+        g_voteValue = item;
+        vote_menu(player_id, menuTitle, "change_bot_difficulty");
+
     }
     return PLUGIN_HANDLED;
+}
+
+public change_bots_max() {
+    ANNOUNCE(g_votePlayerId, "%s has changed the max bot count to %d", g_voteValue);
+    set_pcvar_num(g_bots_max, g_voteValue);
+}
+
+public change_bot_difficulty() {
+    ANNOUNCE(g_votePlayerId, "%s has changed the bot difficulty to %s, the bots will now reconnect", g_difficulties[g_voteValue]);
+    set_pcvar_num(g_bot_difficulty, g_voteValue);
+}
+
+public toggle_melee() {
+    new newMelee = 1 - get_pcvar_num(g_bots_melee);
+    ANNOUNCE(g_votePlayerId, "%s has %s ^"crowbars vs knives^"", newMelee ? "enabled" : "disabled");
+    set_pcvar_num(g_bots_melee, newMelee);
 }
 
 pick_a_game(game_counts[], sign) {
