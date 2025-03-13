@@ -31,6 +31,8 @@ public plugin_init() {
         register_forward(FM_PlayerPostThink, "PlayerPostThinkPre", 0);
         register_forward(FM_PlayerPostThink, "PlayerPostThinkPost", 1);
         register_forward(FM_SetPhysicsKeyValue, "SetPhysicsKeyValuePost", 1);
+        register_forward(FM_FindEntityByString, "FindEntityByStringPre", 0);
+        register_forward(FM_EmitSound, "EmitSoundPre", 0);
 
         GameContext(g_gearbox, "precache_gearbox_ctf_items");
     }
@@ -186,7 +188,8 @@ public PlayerPostThinkPost(player_id) {
     
     g_player_id = player_id;
     GameContext(g_gearbox, "equip_gearbox");
-    g_equip_gearbox[player_id] = 0;
+
+    g_equip_gearbox[g_player_id] = 0;
 
     return FMRES_HANDLED;
 }
@@ -197,13 +200,18 @@ public remove_gearbox_ctf_item() {
         new item = g_gearbox_ctf_items[i];
         if(!item)
             continue;
+
+        dllfunc(DLLFunc_Think, item);
+        
+        new itemName[64];
+        pev(item, pev_classname, itemName, 64);
         
         new itemOwner = pev(item, pev_owner);
         if(!itemOwner) {
-            server_print("Deleted gearbox ctf item %d (player: %d)", item, i);
+            server_print("Deleted gearbox ctf item %d (%s) (player: %d)", item, itemName, i);
             fm_remove_entity(item);
         } else {
-            server_print("Reassigned gearbox ctf item %d (old: %d; new: %d)", item, i, itemOwner);
+            server_print("Reassigned gearbox ctf item %d (%s) (old: %d; new: %d)", item, itemName, i, itemOwner);
             newItems[itemOwner] = item;
         }
     }
@@ -268,6 +276,45 @@ public equip_gearbox() {
     return FMRES_HANDLED;
 }
 
+public FindEntityByStringPre(entity, const key[], const value[]) {
+    if(equal(key, "classname")) {
+        new ctfItems[][] = {"item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration", "item_ctfportablehev", "item_ctflongjump"};
+        for(new i = 0; i < sizeof ctfItems; i++) {
+            if(equal(value, ctfItems[i])) {
+                do {
+                    entity = engfunc(EngFunc_FindEntityByString, entity, key, value);
+                    if(!entity)
+                        break;
+
+                    new owner = pev(entity, pev_owner);
+                    if(!owner)
+                        break;
+
+                    new Float:ownerHealth;
+                    pev(owner, pev_health, ownerHealth);
+                    if(ownerHealth <= 0.0)
+                        break;
+
+                    new ownerImpulse = pev(owner, pev_impulse);
+                    if(ownerImpulse == 205)
+                        break;
+
+                } while(entity);
+
+                forward_return(FMV_CELL, entity);
+                return FMRES_SUPERCEDE;
+            }
+        }
+    }
+    return FMRES_HANDLED;
+}
+
+public EmitSoundPre(entity, channel, sample[], Float:volume, Float:attenuation, fFlags, pitch) {
+    if(equal(sample, "ctf/pow_armor_charge.wav") || equal(sample, "ctf/pow_health_charge.wav") || equal(sample, "ctf/pow_backpack.wav"))
+        return FMRES_SUPERCEDE;
+    return FMRES_HANDLED;
+}
+
 public PostPlayerSpawn(player_id) {
     if(!is_user_connected(player_id))
         return;
@@ -284,7 +331,7 @@ public PostPlayerSpawn(player_id) {
         GameContext(game, "equip_cstrike");
 
     if(game == g_gearbox)
-        g_equip_gearbox[g_player_id] = g_round;
+        g_equip_gearbox[player_id] = g_round;
         
     if((g_round % 6) == 0) 
         client_print(player_id, print_chat, "ARMORED + LONG JUMP ROUND!");

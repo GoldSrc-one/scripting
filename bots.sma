@@ -7,6 +7,7 @@ new g_bots_max;
 new g_bots_melee;
 new g_bot_difficulty;
 new g_valve = -1;
+new g_gearbox = -1;
 new g_cstrike = -1;
 new g_difficulties[][] = {"Easy", "Normal", "Hard", "Expert"}
 
@@ -33,12 +34,12 @@ public plugin_init() {
         if(equal(gameName, "valve"))
             g_valve = i;
 
+        if(equal(gameName, "gearbox"))
+            g_gearbox = i;
+
         if(equal(gameName, "cstrike"))
             g_cstrike = i;
     }
-    
-    if(g_valve == -1 || g_cstrike == -1)
-        set_fail_state("valve + cstrike expected!");
 }
 
 stock bool:FALSE = false;
@@ -204,6 +205,14 @@ public bots_menu_handler(player_id, menu, item) {
     return PLUGIN_HANDLED;
 }
 
+/*new g_bot_id;
+public kill_bot(){
+    new hurt = create_entity("game_player_hurt");
+    entity_set_float(hurt, EV_FL_dmg, 9000.1);
+    force_use(g_bot_id, hurt);
+    remove_entity(hurt);
+}*/
+
 public kill_all_bots() {
     ANNOUNCE(g_votePlayerId, "%s has killed all the bots", 0);
     for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
@@ -211,6 +220,8 @@ public kill_all_bots() {
             continue;
 
         user_kill(player_id, 1);
+        /*g_bot_id = player_id;
+        GameContext(GetEntityOwner(player_id), "kill_bot");*/
     }
 }
 
@@ -260,28 +271,57 @@ public toggle_melee() {
     set_pcvar_num(g_bots_melee, newMelee);
 }
 
-pick_a_game(game_counts[], sign) {
-    new game = -1;
-    if(sign * game_counts[g_valve] < sign * game_counts[g_cstrike])
-        game = g_valve;
-    else if(sign * game_counts[g_cstrike] < sign * game_counts[g_valve])
-        game = g_cstrike;
-    else if(random(2))
-        game = g_valve;
-    else
-        game = g_cstrike;
-    
-    return game;
+pick_a_game(game_counts[8], sign) {
+    new minGame = -1;
+    new minCount;
+    for(new i = 0; i < sizeof game_counts; i++) {
+        if(i != g_valve && i != g_gearbox && i != g_cstrike)
+            continue;
+        
+        if(sign * game_counts[i] < minCount || minGame == -1) {
+            minGame = i;
+            minCount = sign * game_counts[i];
+        }
+    }
+
+    if(minGame != -1)
+        return minGame;
+
+    if(g_cstrike != -1 && random(2))
+        return g_cstrike;
+
+    if(g_valve != -1 && random(2))
+        return g_valve;
+
+    if(g_gearbox != -1 && random(2))
+        return g_gearbox;
+
+    return g_cstrike;
 }
 
 new g_last_difficulty = -1;
 new g_evict = false;
 new g_last_melee = -1;
 
+all_jk_botti_cmd(cmd[]) {
+    if(g_valve != -1)
+        jk_botti_cmd(g_valve, cmd);
+
+    if(g_gearbox != -1)
+        jk_botti_cmd(g_gearbox, cmd);
+}
+
+jk_botti_cmd(iGameDll, cmd[]) {
+    server_cmd("jk_botti#%d %s", iGameDll, cmd);
+}
+
 public bots_think() {
+    new jk_buffer[256];
+
     new difficulty = get_pcvar_num(g_bot_difficulty);
     if(difficulty != g_last_difficulty) {
-        server_cmd("jk_botti botskill %d", 4 - difficulty);
+        format(jk_buffer, 256, "botskill %d", 4 - difficulty);
+        all_jk_botti_cmd(jk_buffer);
         g_last_difficulty = difficulty;
         g_evict = true;
     }
@@ -293,16 +333,19 @@ public bots_think() {
                 "weapon_eagle", "weapon_m249", "weapon_displacer", "weapon_shockrifle", "weapon_sporelauncher", "weapon_sniperrifle"};
             
             for(new i = 0; i < sizeof weapons; i++) {
-                server_cmd("jk_botti botweapon %s avoid_this_gun 1", weapons[i]);
+                format(jk_buffer, 256, "botweapon %s avoid_this_gun 1", weapons[i]);
+                all_jk_botti_cmd(jk_buffer);
             }
             for(new i = 1; i <= 5; i++) {
-                server_cmd("jk_botti bot_skill_setup %d keep_optimal_dist 100", i);
-                server_cmd("jk_botti bot_skill_setup %d battle_strafe 0", i);
+                format(jk_buffer, 256, "bot_skill_setup %d keep_optimal_dist 100", i);
+                all_jk_botti_cmd(jk_buffer);
+                format(jk_buffer, 256, "bot_skill_setup %d battle_strafe 0", i);
+                all_jk_botti_cmd(jk_buffer);
             }
         } else {
             server_cmd("bot_all_weapons");
-            server_cmd("jk_botti botweapon reset");
-            server_cmd("jk_botti bot_skill_setup reset");
+            all_jk_botti_cmd("botweapon reset");
+            all_jk_botti_cmd("bot_skill_setup reset");
         }
         g_last_melee = melee;
     }
@@ -336,46 +379,51 @@ public bots_think() {
     //add
     if(want_bots > total_bots && !g_evict) {
         new game = pick_a_game(game_counts, 1);
-        new gameName[16];
-        GetGameName(game, gameName, 16);
-        server_print("Adding a %s bot... (%d < %d)", gameName, total_bots, want_bots);
+        if(game != -1) {
+            new gameName[16];
+            GetGameName(game, gameName, 16);
+            server_print("Adding a %s bot... (%d < %d)", gameName, total_bots, want_bots);
 
-        if(game == g_valve)
-            server_cmd("jk_botti addbot UNASSIGNED");
-        if(game == g_cstrike)
-            server_cmd("bot_add");
+            if(game == g_cstrike) {
+                server_cmd("bot_add");
+            } else {
+                jk_botti_cmd(game, "addbot UNASSIGNED");
+            }
+        }
     }
 
     //kick
     if(want_bots < total_bots || g_evict) {
         new game = pick_a_game(game_counts, -1);
-        new gameName[16];
-        GetGameName(game, gameName, 16);
-        if(g_evict)
-            server_print("Kicking a %s bot... (evict)", gameName);
-        else
-            server_print("Kicking a %s bot... (%d > %d)", gameName, total_bots, want_bots);
+        if(game != -1) {
+            new gameName[16];
+            GetGameName(game, gameName, 16);
+            if(g_evict)
+                server_print("Kicking a %s bot... (evict)", gameName);
+            else
+                server_print("Kicking a %s bot... (%d > %d)", gameName, total_bots, want_bots);
 
-        new bot_id;
-        new bot_game;
+            new bot_id;
+            new bot_game;
 
-        for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-            if(!is_user_connected(player_id) || !is_user_bot(player_id))
-                continue;
+            for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
+                if(!is_user_connected(player_id) || !is_user_bot(player_id))
+                    continue;
 
-            bot_id = player_id;
-            bot_game = GetEntityOwner(player_id);
-            if(bot_game == game)
-                break;
-        }
+                bot_id = player_id;
+                bot_game = GetEntityOwner(player_id);
+                if(bot_game == game)
+                    break;
+            }
 
-        if(bot_game == g_cstrike) {
-            new name[16];
-            get_user_name(bot_id, name, 16);
-            server_cmd("bot_kick ^"%s^"", name);
-        } else {
-            new userid = get_user_userid(bot_id);
-            server_cmd("kick #%d", userid);
+            if(bot_game == g_cstrike) {
+                new name[16];
+                get_user_name(bot_id, name, 16);
+                server_cmd("bot_kick ^"%s^"", name);
+            } else {
+                new userid = get_user_userid(bot_id);
+                server_cmd("kick #%d", userid);
+            }
         }
     }
 }
