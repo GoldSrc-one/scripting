@@ -1,5 +1,5 @@
 #include <amxmodx>
-#include <engine>
+#include <fakemeta>
 
 #include "crossplay"
 
@@ -10,6 +10,7 @@ new g_valve = -1;
 new g_gearbox = -1;
 new g_cstrike = -1;
 new g_difficulties[][] = {"Easy", "Normal", "Hard", "Expert"}
+new Float:g_factors[MAX_GAMES];
 
 const g_bots_think_task = 1;
 const g_vote_menu_task = 100;
@@ -20,6 +21,7 @@ public plugin_init() {
     register_clcmd("say bots", "bots_menu");
     register_clcmd("say /bots", "bots_menu");
     register_clcmd("say !bots", "bots_menu");
+    register_forward(FM_CreateFakeClient, "CreateFakeClientPre", 0);
     g_bots_max = register_cvar("bots_max", "8");
     g_bots_melee = register_cvar("bots_melee", "0");
     g_bot_difficulty = get_cvar_pointer("bot_difficulty");    
@@ -31,15 +33,29 @@ public plugin_init() {
         new gameName[16];
         GetGameName(i, gameName, 16);
 
-        if(equal(gameName, "valve"))
+        if(equal(gameName, "valve")) {
             g_valve = i;
+            g_factors[i] = 0.35 + random_float(-0.01, 0.01);
+        }
 
-        if(equal(gameName, "gearbox"))
+        if(equal(gameName, "gearbox")) {
             g_gearbox = i;
+            g_factors[i] = 0.20 + random_float(-0.01, 0.01);
+        }
 
-        if(equal(gameName, "cstrike"))
+        if(equal(gameName, "cstrike")) {
             g_cstrike = i;
+            g_factors[i] = 0.45 + random_float(-0.01, 0.01);
+        }
     }
+}
+
+public CreateFakeClientPre(netname[]) {
+    new botname[64];
+    format(botname, 64, "[BOT] %s", netname);
+    new client = engfunc(EngFunc_CreateFakeClient, botname);
+    forward_return(FMV_CELL, client);
+    return FMRES_SUPERCEDE;
 }
 
 stock bool:FALSE = false;
@@ -271,32 +287,22 @@ public toggle_melee() {
     set_pcvar_num(g_bots_melee, newMelee);
 }
 
-pick_a_game(game_counts[8], sign) {
+pick_a_game(game_counts[], sign) {
     new minGame = -1;
-    new minCount;
-    for(new i = 0; i < sizeof game_counts; i++) {
-        if(i != g_valve && i != g_gearbox && i != g_cstrike)
+    new Float:minCount;
+    for(new i = 0; i < MAX_GAMES; i++) {
+        if(!g_factors[i])
             continue;
+
+        new Float:gameCount = (sign * game_counts[i]) / g_factors[i];
         
-        if(sign * game_counts[i] < minCount || minGame == -1) {
+        if(gameCount < minCount || minGame == -1) {
             minGame = i;
-            minCount = sign * game_counts[i];
+            minCount = gameCount;
         }
     }
 
-    if(minGame != -1)
-        return minGame;
-
-    if(g_cstrike != -1 && random(2))
-        return g_cstrike;
-
-    if(g_valve != -1 && random(2))
-        return g_valve;
-
-    if(g_gearbox != -1 && random(2))
-        return g_gearbox;
-
-    return g_cstrike;
+    return minGame;
 }
 
 new g_last_difficulty = -1;
@@ -352,7 +358,7 @@ public bots_think() {
 
     new total_players;
     new total_bots;
-    new game_counts[8];
+    new game_counts[MAX_GAMES];
     for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
         if(!is_user_connected(player_id))
             continue;
