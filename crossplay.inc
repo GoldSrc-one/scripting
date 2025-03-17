@@ -1,4 +1,9 @@
 /**
+ * Maximum number of loaded game dlls
+ */
+const MAX_GAMES = 8;
+
+/**
  * Get total number of loaded game dlls
  *
  * @return				Number of loaded game dlls.
