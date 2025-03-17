@@ -5,6 +5,7 @@ public plugin_init() {
 	register_plugin("DiscordLite", "0.0", "GoldSrc.one");
 	register_concmd("say", "_dl_sayhandler");
 	set_task(0.5, "readin", _, _, _, "b");
+	set_task(10.0, "writestatus", _, _, _, "b");
 }
 
 public readin() {
@@ -101,5 +102,42 @@ public _dl_sayhandler(player_id) {
 		writeout(game, name, "says", saytext);
 	}
 
+	return PLUGIN_CONTINUE;
+}
+
+public writestatus() {
+	new f = fopen("status.txt", "wt");
+	if(!f)
+		return PLUGIN_CONTINUE;
+
+	new map[64];
+	get_mapname(map, 64);
+
+	new Float:gametime = get_gametime();
+	new timeleft = get_timeleft();
+
+	fprintf(f, "%s^t%.0f^t%d^n", map, gametime, timeleft);
+
+	for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
+		if(!is_user_connected(player_id))
+			continue;
+
+		new game[64];
+		if(is_user_bot(player_id)) {
+            GetGameName(GetEntityOwner(player_id), game, 64);
+		} else {
+			GetClientGame(player_id, game, 64);
+		}
+
+		new ip[24];
+		get_user_ip(player_id, ip, 24, 1);
+
+		new name[64];
+		get_user_name(player_id, name, 63);
+
+		fprintf(f, "%s^t%s^t%s^n", game, ip, name);
+	}
+
+	fclose(f);
 	return PLUGIN_CONTINUE;
 }
