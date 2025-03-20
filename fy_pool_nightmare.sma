@@ -4,7 +4,7 @@
 
 #include "crossplay"
 
-new g_valve = -1;
+new g_valve;
 
 public plugin_init() {
     register_plugin("fy_pool_nightmare", "0.0", "GoldSrc.one");
@@ -16,13 +16,7 @@ public plugin_init() {
 
     set_cvar_num("mp_allowmonsters", 1);
 
-    for(new i = 0; i < GetNumGames(); i++) {
-        new gameName[16];
-        GetGameName(i, gameName, 16);
-
-        if(equal(gameName, "valve"))
-            g_valve = i;
-    }
+    g_valve = GetGameIndex("valve");
     
     if(g_valve == -1)
         set_fail_state("Half-Life not loaded!");

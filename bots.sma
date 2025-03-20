@@ -29,25 +29,17 @@ public plugin_init() {
     set_task(1.0, "bots_think", g_bots_think_task, _, _, "b");
     register_clcmd("say", "bots_advertise");
 
-    for(new i = 0; i < GetNumGames(); i++) {
-        new gameName[16];
-        GetGameName(i, gameName, 16);
+    g_valve = GetGameIndex("valve");
+    if(g_valve != -1)
+        g_factors[g_valve] = 0.35 + random_float(-0.01, 0.01);
 
-        if(equal(gameName, "valve")) {
-            g_valve = i;
-            g_factors[i] = 0.35 + random_float(-0.01, 0.01);
-        }
+    g_cstrike = GetGameIndex("cstrike");
+    if(g_cstrike != -1)
+        g_factors[g_cstrike] = 0.20 + random_float(-0.01, 0.01);
 
-        if(equal(gameName, "gearbox")) {
-            g_gearbox = i;
-            g_factors[i] = 0.20 + random_float(-0.01, 0.01);
-        }
-
-        if(equal(gameName, "cstrike")) {
-            g_cstrike = i;
-            g_factors[i] = 0.45 + random_float(-0.01, 0.01);
-        }
-    }
+    g_gearbox = GetGameIndex("gearbox");
+    if(g_gearbox != -1)
+        g_factors[g_gearbox] = 0.45 + random_float(-0.01, 0.01);
 }
 
 public CreateFakeClientPre(netname[]) {
