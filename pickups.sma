@@ -123,25 +123,29 @@ public Equip() {
         new bool:is_pistol = false;
         CHECK_CATEGORY(is_pistol, g_cstrike_pistols);
 
+        new weapons = pev(g_equip_player, pev_weapons);
+        if(is_pistol && (weapons & g_cstrike_pistol_mask) != 0)
+            return;
+
         new bool:is_primary = false;
         CHECK_CATEGORY(is_primary, g_cstrike_shotguns);
         CHECK_CATEGORY(is_primary, g_cstrike_smgs);
         CHECK_CATEGORY(is_primary, g_cstrike_snipers);
         CHECK_CATEGORY(is_primary, g_cstrike_rifles);
+        if(equal(classname, "weapon_shield"))
+            is_primary = true;
 
-        new weapons = pev(g_equip_player, pev_weapons);
-        if(is_pistol && (weapons & g_cstrike_pistol_mask) != 0)
+        new bool:has_shield = (get_pdata_int(g_equip_player, 510) & 0xFF000000) != 0;
+        new bool:has_primary = (weapons & g_cstrike_primary_mask) != 0 || has_shield;
+        if(is_primary && has_primary)
             return;
 
-        if(is_primary && (weapons & g_cstrike_primary_mask) != 0)
-            return;
-
-        //don't pick up shield if he has elite
+        //don't pick up shield if he has elites
         if(equal(classname, "weapon_shield") && (weapons & (1 << 11)) != 0)
             return;
 
-        //if he doesn't have any primary, he might have a shield!
-        if(equal(classname, "weapon_elite") && (weapons & g_cstrike_primary_mask) == 0)
+        //don't pick up elites if he has shield
+        if(equal(classname, "weapon_elite") && has_shield)
             return;
     }
 
@@ -303,8 +307,8 @@ public CreateNamedEntityPost(iClassname) {
             PreparePickup(entity, classname);
         }
         
-        //armoury_entity
-        //hl weapon_...
+        //TODO armoury_entity
+        //TODO hl weapon_...
     }
     return FMRES_HANDLED;
 }
