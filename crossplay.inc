@@ -22,6 +22,23 @@ native GetNumGames();
 native GetGameName(gameIndex, game[], gameLen);
 
 /**
+ * Get game index by name (gamedir) or -1 if not found.
+ * @param game          Game name (gamedir)
+ *
+ * @return              Number between 0 and GetNumGames() - 1, or -1 if not found.
+ */
+stock GetGameIndex(const game[]) {
+    new numGames = GetNumGames();
+    for(new iGame = 0; iGame < numGames; iGame++) {
+        new gameName[64];
+        GetGameName(iGame, gameName, 64);
+        if(equal(game, gameName))
+            return iGame;
+    }
+    return -1;
+}
+
+/**
  * Get index of the game that owns this entity.
  *
  * @param entityIndex   Entity number.
@@ -62,6 +79,17 @@ native bool:SpawnPlayer(playerIndex);
  * @return				Cells written.
  */
 native GetClientGame(clientIndex, game[], gameLen);
+
+/**
+ * Get model index. This is necessary due to the model index mapping.
+ * (Each game client receives different model indices to save up on precached models.)
+ *
+ * @param gameIndex     Number between 0 and GetNumGames() - 1.
+ * @param model         Name of the model.
+ * 
+ * @return				Model index for given name and game.
+ */
+native GetGameModelIndex(gameIndex, const model[]);
 
 /**
  * Called right before spawning the player.
