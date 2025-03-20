@@ -1,0 +1,28 @@
+{
+    "valve": {
+        "pistols": ["weapon_9mmhandgun", "weapon_357"],
+        "shotguns": ["weapon_shotgun"],
+        "smgs": ["weapon_9mmAR"],
+        "snipers": ["weapon_crossbow"],
+        "grenades": ["ammo_ARgrenades", "weapon_tripmine", "weapon_satchel", "weapon_handgrenade", "weapon_snark"],
+        "launchers": ["weapon_rpg", "weapon_hornetgun"],
+        "energy": ["weapon_gauss", "weapon_egon"]
+    },
+    "cstrike": {
+        "pistols": ["weapon_usp", "weapon_fiveseven", "weapon_deagle", "weapon_p228", "weapon_glock18", "weapon_elite"],
+        "shotguns": ["weapon_m3", "weapon_xm1014"],
+        "smgs": ["weapon_mac10", "weapon_ump45", "weapon_p90", "weapon_mp5navy", "weapon_tmp"],
+        "snipers": ["weapon_awp", "weapon_g3sg1", "weapon_scout", "weapon_sg550"],
+        "grenades": ["weapon_hegrenade", "weapon_flashbang", "weapon_shield"],
+        "rifles": ["weapon_ak47", "weapon_m249", "weapon_m4a1", "weapon_aug", "weapon_sg552", "weapon_galil", "weapon_famas"]
+    },
+    "gearbox": {
+        "pistols": ["weapon_9mmhandgun", "weapon_357", "weapon_eagle"],
+        "shotguns": ["weapon_shotgun"],
+        "smgs": ["weapon_9mmAR", "weapon_m249"],
+        "snipers": ["weapon_crossbow", "weapon_sniperrifle"],
+        "grenades": ["ammo_ARgrenades", "weapon_tripmine", "weapon_satchel", "weapon_handgrenade", "weapon_snark", "weapon_penguin"],
+        "launchers": ["weapon_rpg", "weapon_hornetgun", "weapon_sporelauncher", "weapon_shockrifle"],
+        "energy": ["weapon_gauss", "weapon_egon", "weapon_displacer"]
+    }
+}
