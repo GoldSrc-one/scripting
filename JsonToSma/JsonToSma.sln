@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35818.85 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonToSma", "JsonToSma.csproj", "{FEA71EFF-BC92-49D5-93D4-78D4B4DE0828}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FEA71EFF-BC92-49D5-93D4-78D4B4DE0828}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEA71EFF-BC92-49D5-93D4-78D4B4DE0828}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEA71EFF-BC92-49D5-93D4-78D4B4DE0828}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEA71EFF-BC92-49D5-93D4-78D4B4DE0828}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AA6531C6-D6D9-437B-BC8D-060E18089175}
+	EndGlobalSection
+EndGlobal
