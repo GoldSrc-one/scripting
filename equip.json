@@ -1,0 +1,20 @@
+{
+    "valve": {
+        "pistols": ["weapon_9mmhandgun", "weapon_357"],
+        "primaries": ["weapon_shotgun", "weapon_9mmAR", "weapon_crossbow"],
+        "specials": ["weapon_gauss", "weapon_rpg", "weapon_egon", "weapon_hornetgun"],
+        "grenades": ["ammo_ARgrenades", "weapon_tripmine", "weapon_satchel", "weapon_handgrenade", "weapon_snark"]
+    },
+    "cstrike": {
+        "t_pistols" : ["weapon_usp", "weapon_deagle", "weapon_p228", "weapon_glock18", "weapon_elite"],
+        "ct_pistols" : ["weapon_usp", "weapon_fiveseven", "weapon_deagle", "weapon_p228", "weapon_glock18"],
+        "t_primaries" : ["weapon_awp", "weapon_g3sg1", "weapon_ak47", "weapon_scout", "weapon_m249", "weapon_sg552", "weapon_m3", "weapon_xm1014", "weapon_mac10", "weapon_ump45", "weapon_p90", "weapon_mp5navy", "weapon_galil"],
+        "ct_primaries" : ["weapon_awp", "weapon_scout", "weapon_m249", "weapon_m4a1", "weapon_aug", "weapon_sg550", "weapon_m3", "weapon_xm1014", "weapon_ump45", "weapon_p90", "weapon_mp5navy", "weapon_tmp", "weapon_famas", "weapon_shield"]
+    },
+    "gearbox": {
+        "melees": ["weapon_pipewrench", "weapon_knife", "weapon_grapple"],
+        "primaries" : ["weapon_m249", "weapon_displacer", "weapon_sniperrifle"],
+        "specials" : ["weapon_sporelauncher", "weapon_shockrifle"],
+        "powerups": ["item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration"]
+    }
+}
