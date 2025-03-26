@@ -27,11 +27,17 @@ new g_valve_tripmine_modelindex = -1;
 const g_cstrike_pistol_mask  = 0x04030C06; //0000 0100 0000 0011 0000 1100 0000 0110
 const g_cstrike_primary_mask = 0x59FCF1A8; //0101 1001 1111 1100 1111 0001 1010 1000
 
+new g_cstrike_armoury_classname[][32] = {
+    "weapon_mp5navy", "weapon_tmp", "weapon_p90", "weapon_mac10", "weapon_ak47", "weapon_sg552", "weapon_m4a1", "weapon_aug", "weapon_scout", "weapon_g3sg1", "weapon_awp", "weapon_m3", "weapon_xm1014", "weapon_m249", "weapon_flashbang", "weapon_hegrenade", "item_kevlar", "item_assaultsuit", "weapon_smokegrenade",
+    "weapon_shield", "weapon_famas", "weapon_sg550", "weapon_galil", "weapon_ump45", "weapon_glock18", "weapon_usp", "weapon_elite", "weapon_fiveseven", "weapon_p228", "weapon_deagle"
+};
+
 public plugin_init() {
     register_forward(FM_AddToFullPack, "AddToFullPackPost", 1);
     register_forward(FM_Touch, "TouchPre", 0);
     register_forward(FM_CreateNamedEntity, "CreateNamedEntityPost", 1);
     register_forward(FM_OnFreeEntPrivateData, "OnFreeEntPrivateDataPost", 1);
+    register_logevent("logevent_round_start", 2, "1=Round_Start");
 
     g_valve = GetGameIndex("valve");
     g_gearbox = GetGameIndex("gearbox");
@@ -154,8 +160,14 @@ public Equip() {
 }
 
 public DeleteWeaponbox() {
+    unset_entity_pickup(g_equip_item);
+
     //delete the original weaponbox by mere thought
     fm_call_think(g_equip_item);
+
+    //turn armoury_entity invisible and untouchable
+    set_pev(g_equip_item, pev_effects, pev(g_equip_item, pev_effects) | EF_NODRAW);
+    set_pev(g_equip_item, pev_solid, SOLID_NOT);
 }
 
 public TouchPre(touched, other) {
@@ -241,7 +253,8 @@ bool:find_weapon(iGame, const classname[], &found_category, &found_item) {
 
 public OnWeaponboxCreate(entity) {
     new classname[32];
-    for (new i = get_maxplayers() + 1; i < maxEntities; i++) {
+    new numEntities = fm_entity_count();
+    for (new i = get_maxplayers() + 1; i < numEntities; i++) {
         if (!pev_valid(i))
             continue;
 
@@ -251,7 +264,7 @@ public OnWeaponboxCreate(entity) {
         pev(i, pev_classname, classname, 32);
     }
 
-    server_print("weaponbox: %s", classname);
+    //server_print("weaponbox: %s", classname);
 
     if(!classname[0])
         return;
@@ -288,7 +301,7 @@ PreparePickup(entity, const classname[]) {
         }
         g_pickup_modelindex[iGame][pos] = g_modelindices[iGame][newCategory][newItem];
 
-        server_print("^t%d: %s %d", iGame, g_pickup_classname[iGame][pos], g_pickup_modelindex[iGame][pos]);
+        //server_print("^t%d: %s %d", iGame, g_pickup_classname[iGame][pos], g_pickup_modelindex[iGame][pos]);
     }
 }
 
@@ -303,24 +316,45 @@ public CreateNamedEntityPost(iClassname) {
             set_task(0.0, "OnWeaponboxCreate", entity);
         }
         if(equal(classname, "weapon_shield")) {
-            server_print("weapon_shield");
+            //server_print("weapon_shield");
             PreparePickup(entity, classname);
         }
         
-        //TODO armoury_entity
         //TODO hl weapon_...
     }
     return FMRES_HANDLED;
 }
 
-public OnFreeEntPrivateDataPost(entity) {
-    if(!g_entity_pickups[entity])
-        return FMRES_HANDLED;
+public logevent_round_start() {
+    new classname[32];
+    new numEntities = fm_entity_count();
+    for (new entity = get_maxplayers() + 1; entity < numEntities; entity++) {
+        unset_entity_pickup(entity);
 
-    server_print("OnFreeEntPrivateDataPost %d", entity);
+        if (!pev_valid(entity))
+            continue;
+        
+        pev(entity, pev_classname, classname, 32);
+        if(equal(classname, "armoury_entity")) {
+            new armouryIndex = get_pdata_int(entity, 34);
+            //server_print("armoury_entity: %s", g_cstrike_armoury_classname[armouryIndex]);
+            PreparePickup(entity, g_cstrike_armoury_classname[armouryIndex]);
+        }
+    }
+}
+
+unset_entity_pickup(entity) {
+    if(!g_entity_pickups[entity])
+        return;
+
+    //server_print("unset_entity_pickup %d", entity);
     if(g_entity_pickups[entity] == g_pickup_pos) {
         g_pickup_pos--;
     }
     g_entity_pickups[entity] = 0;
+}
+
+public OnFreeEntPrivateDataPost(entity) {
+    unset_entity_pickup(entity);
     return FMRES_HANDLED;
 }

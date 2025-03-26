@@ -20,7 +20,14 @@ new g_valve_category_names[][32] = { "Pistol", "Primary", "Special", "Grenade" }
 new g_cstrike_category_names[][32] = { "T Pistol", "CT Pistol", "T Primary", "CT Primary" };
 new g_gearbox_category_names[][32] = { "Melee", "Primary", "Special", "PowerUp" };
 
+new bool:g_pistol_only = false;
+
 public plugin_init() {
+    new mapname[64];
+    get_mapname(mapname, 64);
+    if(equal(mapname, "fy_", 3))
+        g_pistol_only = true;
+
     register_plugin("Equip", "0.0", "GoldSrc.one");
     register_clcmd("say wish", "wish_menu");
     register_clcmd("say /wish", "wish_menu");
@@ -131,17 +138,19 @@ public equip_valve() {
 
     give_item_times(g_player_id, get_wish_or_random(g_valve, e_valve_pistols), 3);
 
-    new primary[32];
-    copy(primary, 32, get_wish_or_random(g_valve, e_valve_primaries));
-    give_item_times(g_player_id, primary, 3);
+    if(!g_pistol_only) {
+        new primary[32];
+        copy(primary, 32, get_wish_or_random(g_valve, e_valve_primaries));
+        give_item_times(g_player_id, primary, 3);
 
-    give_item(g_player_id, get_wish_or_random(g_valve, e_valve_specials));
+        give_item(g_player_id, get_wish_or_random(g_valve, e_valve_specials));
 
-    new grenadeIndex = get_wish_index(e_valve_grenades);
-    if(grenadeIndex == -1) {
-        grenadeIndex = equal(primary, "weapon_9mmAR") ? 0 : (random(get_game_category_items(g_valve, e_valve_grenades) - 1) + 1);
+        new grenadeIndex = get_wish_index(e_valve_grenades);
+        if(grenadeIndex == -1) {
+            grenadeIndex = equal(primary, "weapon_9mmAR") ? 0 : (random(get_game_category_items(g_valve, e_valve_grenades) - 1) + 1);
+        }
+        give_item(g_player_id, get_game_category_item(g_valve, e_valve_grenades, grenadeIndex));
     }
-    give_item(g_player_id, get_game_category_item(g_valve, e_valve_grenades, grenadeIndex));
 
     give_item(g_player_id, "weapon_crowbar");
 
@@ -176,16 +185,18 @@ public equip_cstrike() {
     
     if(pistolCategory != -1)
         give_item_times(g_player_id, get_wish_or_random(g_cstrike, pistolCategory), 4);
-        
-    if(primaryCategory != -1)
-        give_item_times(g_player_id, get_wish_or_random(g_cstrike, primaryCategory), 4);
+    
+    if(!g_pistol_only) {
+        if(primaryCategory != -1)
+            give_item_times(g_player_id, get_wish_or_random(g_cstrike, primaryCategory), 4);
 
-    if(g_should_grant_wish[g_player_id] || random(2))
-        give_item(g_player_id, "weapon_hegrenade");
-    if(g_should_grant_wish[g_player_id] || random(2))
-        give_item(g_player_id, "weapon_flashbang");
-    if(g_should_grant_wish[g_player_id] || random(2))
-        give_item(g_player_id, "weapon_flashbang");
+        if(g_should_grant_wish[g_player_id] || random(2))
+            give_item(g_player_id, "weapon_hegrenade");
+        if(g_should_grant_wish[g_player_id] || random(2))
+            give_item(g_player_id, "weapon_flashbang");
+        if(g_should_grant_wish[g_player_id] || random(2))
+            give_item(g_player_id, "weapon_flashbang");
+    }
 
     give_item(g_player_id, "weapon_knife");
 
@@ -260,7 +271,7 @@ public equip_gearbox_ctf_item() {
         item = give_item(g_player_id, "item_ctflongjump");
     } else if((g_equip_gearbox[g_player_id] % 2) == 0) {
         item = give_item(g_player_id, "item_ctfportablehev");
-    } else {
+    } else if(!g_pistol_only) {
         item = give_item(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_powerups));
     }
     
@@ -280,11 +291,13 @@ public equip_gearbox() {
     strip_user_weapons(g_player_id);
     equip_gearbox_ctf_item();
 
-    give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_primaries), 5);
-    give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_specials), 5);
+    if(!g_pistol_only) {
+        give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_primaries), 5);
+        give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_specials), 5);
 
-    if(g_should_grant_wish[g_player_id] || random(2))
-        give_item(g_player_id, "weapon_penguin");
+        if(g_should_grant_wish[g_player_id] || random(2))
+            give_item(g_player_id, "weapon_penguin");
+    }
 
     give_item_times(g_player_id, "weapon_eagle", 7);
 
@@ -364,6 +377,9 @@ public PostPlayerSpawn(player_id) {
 }
 
 menu_addwishcategory(player_id, menu, name[]){
+    if(g_pistol_only && !equal(name, "Pistol") && !equal(name, "T Pistol") && !equal(name, "CT Pistol") && !equal(name, "Melee"))
+        return;
+
     new category = menu_items(menu);
     new title[64];
     if(g_wish[player_id][category] != -1) {
