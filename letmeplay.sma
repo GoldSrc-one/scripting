@@ -5,9 +5,9 @@
 
 public plugin_init() {
     register_plugin("LetMePlay", "0.0", "GoldSrc.one");
-    register_clcmd("say letmeplay", "letmeplay");
-    register_clcmd("say /letmeplay", "letmeplay");
-    register_clcmd("say !letmeplay", "letmeplay");
+    register_clcmd("say letmeplay", "say_letmeplay");
+    register_clcmd("say /letmeplay", "say_letmeplay");
+    register_clcmd("say !letmeplay", "say_letmeplay");
     
     set_task(0.5, "show_message", _, _, _, "b");
 }
@@ -78,6 +78,15 @@ public letmeplay(player_id) {
     entity_set_int(player_id, EV_INT_flags, flags);
 
     user_kill(bot_id, 1);
+
+    return PLUGIN_HANDLED;
+}
+
+public say_letmeplay(player_id) {
+    if(!can_replace_bot(player_id))
+	    return PLUGIN_HANDLED;
+    
+    set_task(0.0, "letmeplay", player_id);
 
     return PLUGIN_HANDLED;
 }
