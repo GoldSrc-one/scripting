@@ -1,13 +1,13 @@
 #include <amxmodx>
-#include <fun>
 #include <fakemeta>
 #include <fakemeta_util>
 
 #include "crossplay"
 
 new g_valve;
-new g_cstrike;
 new g_gearbox;
+new g_dmc;
+new g_cstrike;
 
 #include "equip_gen"
 
@@ -19,13 +19,14 @@ new g_wish[33][MAX_CATEGORIES];
 new g_valve_category_names[][32] = { "Pistol", "Primary", "Special", "Grenade" };
 new g_cstrike_category_names[][32] = { "T Pistol", "CT Pistol", "T Primary", "CT Primary" };
 new g_gearbox_category_names[][32] = { "Melee", "Primary", "Special", "PowerUp" };
+new g_dmc_category_names[][32] = { "Primary", "Special", "PowerUp" };
 
 new bool:g_pistol_only = false;
 
 public plugin_init() {
     new mapname[64];
     get_mapname(mapname, 64);
-    if(equal(mapname, "fy_", 3))
+    if(equal(mapname, "fy_", 3) && !equal(mapname, "fy_nuketown"))
         g_pistol_only = true;
 
     register_plugin("Equip", "0.0", "GoldSrc.one");
@@ -40,8 +41,9 @@ public plugin_init() {
     set_task(120.0, "wish_advertise", _, _, _, "b");
 
     g_valve = GetGameIndex("valve");
-    g_cstrike = GetGameIndex("cstrike");
     g_gearbox = GetGameIndex("gearbox");
+    g_dmc = GetGameIndex("dmc");
+    g_cstrike = GetGameIndex("cstrike");
 
     if(g_gearbox != -1) {
         register_forward(FM_PlayerPostThink, "PlayerPostThinkPre", 0);
@@ -52,15 +54,31 @@ public plugin_init() {
 
         GameContext(g_gearbox, "precache_gearbox_ctf_items");
     }
+    if(g_dmc != -1) {
+        register_forward(FM_CmdStart, "CmdStartPre", 0)
+        GameContext(g_dmc, "precache_dmc_items");
+    }
+}
+
+precache_items(const items[][], count) {
+    for(new i = 0; i < count; i++) {
+        new item = fm_create_entity(items[i]);
+        fm_DispatchSpawn(item);
+        fm_remove_entity(item);
+    }
 }
 
 public precache_gearbox_ctf_items(){
     new ctfItems[][] = {"item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration", "item_ctfportablehev", "item_ctflongjump"};
-    for(new i = 0; i < sizeof ctfItems; i++) {
-        new item = fm_create_entity(ctfItems[i]);
-        fm_DispatchSpawn(item);
-        fm_remove_entity(item);
-    }
+    precache_items(ctfItems, sizeof ctfItems);
+}
+
+public precache_dmc_items() {
+    precache_items(g_dmc_primaries, sizeof g_dmc_primaries);
+    precache_items(g_dmc_specials, sizeof g_dmc_specials);
+    precache_items(g_dmc_powerups, sizeof g_dmc_powerups);
+    new others[][] = {"item_armor1"};
+    precache_items(others, sizeof others);
 }
 
 new g_round = 0;
@@ -68,9 +86,12 @@ public logevent_round_start() {
     g_round++;
 }
 
-give_item_times(player_id, const item[], times) {
-    for(new i = 0; i < times; i++)
-        give_item(player_id, item);
+give_item_times(player_id, const item[], times, bool:remove = false) {
+    for(new i = 0; i < times; i++) {
+        new entity = fm_give_item(player_id, item);
+        if(entity > 0 && remove)
+            fm_remove_entity(entity);
+    }
 }
 
 new g_player_equip = -1;
@@ -85,8 +106,9 @@ public add_equip_prevention() {
 public PrePlayerSpawn(player_id) {
     if(!is_user_connected(player_id))
         return;
-
-    GameContext(GetEntityOwner(player_id), "add_equip_prevention");
+    new game = GetEntityOwner(player_id);
+    if(game != g_dmc)
+        GameContext(game, "add_equip_prevention");
 }
 
 public remove_equip_prevention() {
@@ -128,13 +150,13 @@ wish_granted(player_id) {
 }
 
 public equip_valve() {
-    strip_user_weapons(g_player_id);
+    fm_strip_user_weapons(g_player_id);
 
     if((g_round % 2) == 0) 
         give_item_times(g_player_id, "item_battery", 7);
 
     if((g_round % 3) == 0) 
-        give_item(g_player_id, "item_longjump");
+        fm_give_item(g_player_id, "item_longjump");
 
     give_item_times(g_player_id, get_wish_or_random(g_valve, e_valve_pistols), 3);
 
@@ -143,28 +165,30 @@ public equip_valve() {
         copy(primary, 32, get_wish_or_random(g_valve, e_valve_primaries));
         give_item_times(g_player_id, primary, 3);
 
-        give_item(g_player_id, get_wish_or_random(g_valve, e_valve_specials));
+        fm_give_item(g_player_id, get_wish_or_random(g_valve, e_valve_specials));
 
         new grenadeIndex = get_wish_index(e_valve_grenades);
         if(grenadeIndex == -1) {
             grenadeIndex = equal(primary, "weapon_9mmAR") ? 0 : (random(get_game_category_items(g_valve, e_valve_grenades) - 1) + 1);
+        } else {
+            g_wish_granted[g_player_id] = true;
         }
-        give_item(g_player_id, get_game_category_item(g_valve, e_valve_grenades, grenadeIndex));
+        fm_give_item(g_player_id, get_game_category_item(g_valve, e_valve_grenades, grenadeIndex));
     }
 
-    give_item(g_player_id, "weapon_crowbar");
+    fm_give_item(g_player_id, "weapon_crowbar");
 
     wish_granted(g_player_id);
 }
 
 public equip_cstrike() {
-    strip_user_weapons(g_player_id);
+    fm_strip_user_weapons(g_player_id);
 
     if((g_round % 2) == 0)
-        give_item(g_player_id, "item_assaultsuit");
+        fm_give_item(g_player_id, "item_assaultsuit");
 
     if((g_round % 3) == 0)
-        give_item(g_player_id, "item_longjump");
+        fm_give_item(g_player_id, "item_longjump");
 
     new player_team[16];
     get_user_team(g_player_id, player_team, 16);
@@ -177,7 +201,7 @@ public equip_cstrike() {
     }
 
     if(equal(player_team, "CT")){
-        give_item(g_player_id, "item_thighpack");
+        fm_give_item(g_player_id, "item_thighpack");
 
         pistolCategory = e_cstrike_ct_pistols;
         primaryCategory = e_cstrike_ct_primaries;        
@@ -191,14 +215,14 @@ public equip_cstrike() {
             give_item_times(g_player_id, get_wish_or_random(g_cstrike, primaryCategory), 4);
 
         if(g_should_grant_wish[g_player_id] || random(2))
-            give_item(g_player_id, "weapon_hegrenade");
+            fm_give_item(g_player_id, "weapon_hegrenade");
         if(g_should_grant_wish[g_player_id] || random(2))
-            give_item(g_player_id, "weapon_flashbang");
+            fm_give_item(g_player_id, "weapon_flashbang");
         if(g_should_grant_wish[g_player_id] || random(2))
-            give_item(g_player_id, "weapon_flashbang");
+            fm_give_item(g_player_id, "weapon_flashbang");
     }
 
-    give_item(g_player_id, "weapon_knife");
+    fm_give_item(g_player_id, "weapon_knife");
 
     wish_granted(g_player_id);
 }
@@ -265,14 +289,14 @@ public equip_gearbox_ctf_item() {
     
     new item = 0;
     if((g_equip_gearbox[g_player_id] % 6) == 0) {
-        give_item(g_player_id, "item_longjump");
-        item = give_item(g_player_id, "item_ctfportablehev");
+        fm_give_item(g_player_id, "item_longjump");
+        item = fm_give_item(g_player_id, "item_ctfportablehev");
     } else if((g_equip_gearbox[g_player_id] % 3) == 0) {
-        item = give_item(g_player_id, "item_ctflongjump");
+        item = fm_give_item(g_player_id, "item_ctflongjump");
     } else if((g_equip_gearbox[g_player_id] % 2) == 0) {
-        item = give_item(g_player_id, "item_ctfportablehev");
+        item = fm_give_item(g_player_id, "item_ctfportablehev");
     } else if(!g_pistol_only) {
-        item = give_item(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_powerups));
+        item = fm_give_item(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_powerups));
     }
     
     if(item > 0) {
@@ -288,7 +312,7 @@ public SetPhysicsKeyValuePost(entity, const key[], const value[]) {
 
 public equip_gearbox() {
     remove_gearbox_ctf_item();
-    strip_user_weapons(g_player_id);
+    fm_strip_user_weapons(g_player_id);
     equip_gearbox_ctf_item();
 
     if(!g_pistol_only) {
@@ -296,12 +320,12 @@ public equip_gearbox() {
         give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_specials), 5);
 
         if(g_should_grant_wish[g_player_id] || random(2))
-            give_item(g_player_id, "weapon_penguin");
+            fm_give_item(g_player_id, "weapon_penguin");
     }
 
     give_item_times(g_player_id, "weapon_eagle", 7);
 
-    give_item(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_melees));
+    fm_give_item(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_melees));
 
     wish_granted(g_player_id);
     return FMRES_HANDLED;
@@ -346,6 +370,31 @@ public EmitSoundPre(entity, channel, sample[], Float:volume, Float:attenuation, 
     return FMRES_HANDLED;
 }
 
+new g_dmc_powerup[33];
+const Float:dmc_powerup_duration = 5.0;
+public equip_dmc() {
+    g_dmc_powerup[g_player_id] = -1;
+
+    if(!g_pistol_only) {
+        give_item_times(g_player_id, get_wish_or_random(g_dmc, e_dmc_primaries), 4, true);
+        give_item_times(g_player_id, get_wish_or_random(g_dmc, e_dmc_specials), 1, true);
+        g_dmc_powerup[g_player_id] = get_wish_index(e_dmc_powerups);
+        if(g_dmc_powerup[g_player_id] == -1) {
+            g_dmc_powerup[g_player_id] = random(get_game_category_items(g_dmc, e_dmc_powerups));
+        } else {
+            g_wish_granted[g_player_id] = true;
+        }
+        client_print(g_player_id, print_chat, "You got %s, double tap the use key to activate for %.0f seconds!", get_game_category_item(g_dmc, e_dmc_powerups, g_dmc_powerup[g_player_id]), dmc_powerup_duration);
+    }
+
+    if((g_round % 2) == 0) {
+        give_item_times(g_player_id, "item_armor1", 1, true);
+    }
+
+    wish_granted(g_player_id);
+    return FMRES_HANDLED;
+}
+
 public PostPlayerSpawn(player_id) {
     if(!is_user_connected(player_id))
         return;
@@ -355,25 +404,99 @@ public PostPlayerSpawn(player_id) {
     g_player_id = player_id;
 
     new game = GetEntityOwner(player_id);
-    GameContext(game, "remove_equip_prevention");
+    if(game != g_dmc)
+        GameContext(game, "remove_equip_prevention");
 
     if(game == g_valve)
         GameContext(game, "equip_valve");
+
+    if(game == g_dmc)
+        GameContext(game, "equip_dmc");
     
     if(game == g_cstrike)
         GameContext(game, "equip_cstrike");
 
     if(game == g_gearbox)
         g_equip_gearbox[player_id] = g_round;
-        
-    if((g_round % 6) == 0) 
-        client_print(player_id, print_chat, "ARMORED + LONG JUMP ROUND!");
-    else if((g_round % 2) == 0) 
-        client_print(player_id, print_chat, "ARMORED ROUND");
-    else if((g_round % 3) == 0) 
-        client_print(player_id, print_chat, "LONG JUMP ROUND");
-    else
-        client_print(player_id, print_chat, "unarmored round");
+    
+    if(game != g_dmc) {
+        if((g_round % 6) == 0) 
+            client_print(player_id, print_chat, "ARMORED + LONG JUMP ROUND!");
+        else if((g_round % 2) == 0) 
+            client_print(player_id, print_chat, "ARMORED ROUND");
+        else if((g_round % 3) == 0) 
+            client_print(player_id, print_chat, "LONG JUMP ROUND");
+        else
+            client_print(player_id, print_chat, "unarmored round");
+    } else {
+        if((g_round % 2) == 0) 
+            client_print(player_id, print_chat, "ARMORED ROUND");
+        else
+            client_print(player_id, print_chat, "unarmored round");
+    }
+}
+
+new bool:g_use_down[33];
+new Float:g_use_time[33];
+public CmdStartPre(player, cmd, random_seed)
+{
+    if(!is_user_alive(player))
+        return FMRES_IGNORED;
+
+    //set_pev(player, pev_oldbuttons, pev(player, pev_oldbuttons) & ~IN_JUMP);
+
+    if(g_dmc_powerup[player] == -1)
+        return FMRES_IGNORED;
+
+    if(!(get_uc(cmd, UC_Buttons) & IN_USE)) {
+        g_use_down[player] = false;
+        return FMRES_IGNORED;
+    }
+    
+    if(g_use_down[player])
+        return FMRES_IGNORED;
+    
+    g_use_down[player] = true;
+
+    if(g_use_time[player] >= get_gametime() - 0.5) {
+        g_player_id = player;
+        GameContext(g_dmc, "ActivateDmcPowerup");
+        g_dmc_powerup[player] = -1;
+    }
+
+    g_use_time[player] = get_gametime();
+
+    return FMRES_HANDLED;
+}
+
+public ActivateDmcPowerup() {
+    new powerup = fm_create_entity(get_game_category_item(g_dmc, e_dmc_powerups, g_dmc_powerup[g_player_id]));
+    if(!powerup)
+        return FMRES_HANDLED;
+
+    fm_DispatchSpawn(powerup);
+
+    for(new i = 14; i <= 17; i++) {
+        new Float:finished = get_pdata_float(powerup, i);
+        if(finished > 0.0)
+            set_pdata_float(powerup, i, dmc_powerup_duration);
+    }
+
+    fm_fake_touch(powerup, g_player_id);
+    fm_remove_entity(powerup);
+
+    new Float:renderamt;
+    pev(g_player_id, pev_renderamt, renderamt);
+    if(renderamt <= 5.0) {
+        set_pev(g_player_id, pev_flags, pev(g_player_id, pev_flags) | FL_NOTARGET);
+        set_task(dmc_powerup_duration, "RemoveNoTarget", g_player_id);
+    }
+
+    return FMRES_HANDLED;
+}
+
+public RemoveNoTarget(player_id) {
+    set_pev(player_id, pev_flags, pev(player_id, pev_flags) & ~FL_NOTARGET);
 }
 
 menu_addwishcategory(player_id, menu, name[]){
@@ -394,6 +517,7 @@ get_game_category_name(game, category) {
     if(game == g_valve) return g_valve_category_names[category];
     if(game == g_cstrike) return g_cstrike_category_names[category];
     if(game == g_gearbox) return g_gearbox_category_names[category];
+    if(game == g_dmc) return g_dmc_category_names[category];
     new emptyString[32] = "";
     return emptyString;
 }

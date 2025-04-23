@@ -1,3 +1,4 @@
+new g_valve_categories[][32] = {"pistols", "shotguns", "smgs", "snipers", "grenades", "launchers", "energy"}
 new g_valve_pistols[][32] = {"weapon_9mmhandgun", "weapon_357"}
 new g_valve_shotguns[][32] = {"weapon_shotgun"}
 new g_valve_smgs[][32] = {"weapon_9mmAR"}
@@ -15,6 +16,7 @@ enum _:e_valve_categories {
         e_valve_energy,
 }
 
+new g_cstrike_categories[][32] = {"pistols", "shotguns", "smgs", "snipers", "grenades", "rifles"}
 new g_cstrike_pistols[][32] = {"weapon_usp", "weapon_fiveseven", "weapon_deagle", "weapon_p228", "weapon_glock18", "weapon_elite"}
 new g_cstrike_shotguns[][32] = {"weapon_m3", "weapon_xm1014"}
 new g_cstrike_smgs[][32] = {"weapon_mac10", "weapon_ump45", "weapon_p90", "weapon_mp5navy", "weapon_tmp"}
@@ -30,6 +32,7 @@ enum _:e_cstrike_categories {
         e_cstrike_rifles,
 }
 
+new g_gearbox_categories[][32] = {"pistols", "shotguns", "smgs", "snipers", "grenades", "launchers", "energy"}
 new g_gearbox_pistols[][32] = {"weapon_9mmhandgun", "weapon_357", "weapon_eagle"}
 new g_gearbox_shotguns[][32] = {"weapon_shotgun"}
 new g_gearbox_smgs[][32] = {"weapon_9mmAR", "weapon_m249"}
@@ -47,13 +50,35 @@ enum _:e_gearbox_categories {
         e_gearbox_energy,
 }
 
+new g_dmc_categories[][32] = {"shotguns", "smgs", "launchers", "energy"}
+new g_dmc_shotguns[][32] = {"weapon_supershotgun"}
+new g_dmc_smgs[][32] = {"weapon_nailgun", "weapon_supernailgun"}
+new g_dmc_launchers[][32] = {"weapon_grenadelauncher", "weapon_rocketlauncher"}
+new g_dmc_energy[][32] = {"weapon_lightning"}
+enum _:e_dmc_categories {
+        e_dmc_shotguns,
+        e_dmc_smgs,
+        e_dmc_launchers,
+        e_dmc_energy,
+}
+
 const MAX_CATEGORIES = 7;
 
 get_game_categories(game) {
         if (game == g_valve) return e_valve_categories;
         if (game == g_cstrike) return e_cstrike_categories;
         if (game == g_gearbox) return e_gearbox_categories;
+        if (game == g_dmc) return e_dmc_categories;
         return 0;
+}
+
+get_game_category(game, category) {
+        if (game == g_valve) return g_valve_categories[category];
+        if (game == g_cstrike) return g_cstrike_categories[category];
+        if (game == g_gearbox) return g_gearbox_categories[category];
+        if (game == g_dmc) return g_dmc_categories[category];
+        new emptyString[32] = "";
+        return emptyString;
 }
 
 get_game_category_items(game, category) {
@@ -77,6 +102,10 @@ get_game_category_items(game, category) {
         if (game == g_gearbox && category == e_gearbox_grenades) return sizeof g_gearbox_grenades;
         if (game == g_gearbox && category == e_gearbox_launchers) return sizeof g_gearbox_launchers;
         if (game == g_gearbox && category == e_gearbox_energy) return sizeof g_gearbox_energy;
+        if (game == g_dmc && category == e_dmc_shotguns) return sizeof g_dmc_shotguns;
+        if (game == g_dmc && category == e_dmc_smgs) return sizeof g_dmc_smgs;
+        if (game == g_dmc && category == e_dmc_launchers) return sizeof g_dmc_launchers;
+        if (game == g_dmc && category == e_dmc_energy) return sizeof g_dmc_energy;
         return 0;
 }
 
@@ -101,7 +130,10 @@ get_game_category_item(game, category, item) {
         if (game == g_gearbox && category == e_gearbox_grenades) return g_gearbox_grenades[item];
         if (game == g_gearbox && category == e_gearbox_launchers) return g_gearbox_launchers[item];
         if (game == g_gearbox && category == e_gearbox_energy) return g_gearbox_energy[item];
+        if (game == g_dmc && category == e_dmc_shotguns) return g_dmc_shotguns[item];
+        if (game == g_dmc && category == e_dmc_smgs) return g_dmc_smgs[item];
+        if (game == g_dmc && category == e_dmc_launchers) return g_dmc_launchers[item];
+        if (game == g_dmc && category == e_dmc_energy) return g_dmc_energy[item];
         new emptyString[32] = "";
         return emptyString;
 }
-

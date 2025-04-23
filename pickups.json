@@ -24,5 +24,11 @@
         "grenades": ["ammo_ARgrenades", "weapon_tripmine", "weapon_satchel", "weapon_handgrenade", "weapon_snark", "weapon_penguin"],
         "launchers": ["weapon_rpg", "weapon_hornetgun", "weapon_sporelauncher", "weapon_shockrifle"],
         "energy": ["weapon_gauss", "weapon_egon", "weapon_displacer"]
+    },
+    "dmc": {
+        "shotguns": ["weapon_supershotgun"],
+        "smgs": ["weapon_nailgun", "weapon_supernailgun"],
+        "launchers": ["weapon_grenadelauncher", "weapon_rocketlauncher"],
+        "energy": ["weapon_lightning"]
     }
 }

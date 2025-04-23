@@ -29,13 +29,16 @@ void PrintBlock(string title, List<string> lines)
 
 int maxCategories = 0;
 var getGameCategories = new List<string>();
+var getGameCategory = new List<string>();
 var getGameCategoryItems = new List<string>();
 var getGameCategoryItem = new List<string>();
 
 foreach ((var game, var categories) in jsonDoc)
 {
     getGameCategories.Add($"if (game == g_{game}) return e_{game}_categories;");
+    getGameCategory.Add($"if (game == g_{game}) return g_{game}_categories[category];");
 
+    Console.WriteLine($"new g_{game}_categories[][32] = {{{string.Join(", ", categories.Select(kvp => $"\"{kvp.Key}\""))}}}");
     var categoriesEnum = new List<string>();
 
     foreach ((var category, var items) in categories)
@@ -59,6 +62,10 @@ Console.WriteLine();
 
 getGameCategories.Add("return 0;");
 PrintBlock("get_game_categories(game)", getGameCategories);
+
+getGameCategory.Add("new emptyString[32] = \"\";");
+getGameCategory.Add("return emptyString;");
+PrintBlock("get_game_category(game, category)", getGameCategory);
 
 getGameCategoryItems.Add("return 0;");
 PrintBlock("get_game_category_items(game, category)", getGameCategoryItems);

@@ -31,12 +31,22 @@ enum _:e_gearbox_categories {
         e_gearbox_powerups,
 }
 
+new g_dmc_primaries[][32] = {"weapon_supershotgun", "weapon_nailgun", "weapon_supernailgun"}
+new g_dmc_specials[][32] = {"weapon_grenadelauncher", "weapon_rocketlauncher", "weapon_lightning"}
+new g_dmc_powerups[][32] = {"item_artifact_invulnerability", "item_artifact_invisibility", "item_artifact_super_damage"}
+enum _:e_dmc_categories {
+        e_dmc_primaries,
+        e_dmc_specials,
+        e_dmc_powerups,
+}
+
 const MAX_CATEGORIES = 4;
 
 get_game_categories(game) {
         if (game == g_valve) return e_valve_categories;
         if (game == g_cstrike) return e_cstrike_categories;
         if (game == g_gearbox) return e_gearbox_categories;
+        if (game == g_dmc) return e_dmc_categories;
         return 0;
 }
 
@@ -53,6 +63,9 @@ get_game_category_items(game, category) {
         if (game == g_gearbox && category == e_gearbox_primaries) return sizeof g_gearbox_primaries;
         if (game == g_gearbox && category == e_gearbox_specials) return sizeof g_gearbox_specials;
         if (game == g_gearbox && category == e_gearbox_powerups) return sizeof g_gearbox_powerups;
+        if (game == g_dmc && category == e_dmc_primaries) return sizeof g_dmc_primaries;
+        if (game == g_dmc && category == e_dmc_specials) return sizeof g_dmc_specials;
+        if (game == g_dmc && category == e_dmc_powerups) return sizeof g_dmc_powerups;
         return 0;
 }
 
@@ -69,6 +82,9 @@ get_game_category_item(game, category, item) {
         if (game == g_gearbox && category == e_gearbox_primaries) return g_gearbox_primaries[item];
         if (game == g_gearbox && category == e_gearbox_specials) return g_gearbox_specials[item];
         if (game == g_gearbox && category == e_gearbox_powerups) return g_gearbox_powerups[item];
+        if (game == g_dmc && category == e_dmc_primaries) return g_dmc_primaries[item];
+        if (game == g_dmc && category == e_dmc_specials) return g_dmc_specials[item];
+        if (game == g_dmc && category == e_dmc_powerups) return g_dmc_powerups[item];
         new emptyString[32] = "";
         return emptyString;
 }

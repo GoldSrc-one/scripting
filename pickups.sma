@@ -6,6 +6,7 @@
 
 new g_valve;
 new g_gearbox;
+new g_dmc;
 new g_cstrike;
 
 #include "pickups_gen"
@@ -17,6 +18,7 @@ new g_entity_pickups[maxEntities];
 const maxPickups = 64;
 new g_pickup_modelindex[MAX_GAMES][maxPickups];
 new g_pickup_classname[MAX_GAMES][maxPickups][32];
+new Float:g_pickup_ignore[maxPickups][33];
 new g_pickup_pos;
 
 const maxWeaponsInCategory = 16;
@@ -32,6 +34,8 @@ new g_cstrike_armoury_classname[][32] = {
     "weapon_shield", "weapon_famas", "weapon_sg550", "weapon_galil", "weapon_ump45", "weapon_glock18", "weapon_usp", "weapon_elite", "weapon_fiveseven", "weapon_p228", "weapon_deagle"
 };
 
+new g_ammo_offsets[MAX_GAMES];
+
 public plugin_init() {
     register_forward(FM_AddToFullPack, "AddToFullPackPost", 1);
     register_forward(FM_Touch, "TouchPre", 0);
@@ -40,8 +44,20 @@ public plugin_init() {
     register_logevent("logevent_round_start", 2, "1=Round_Start");
 
     g_valve = GetGameIndex("valve");
+    if(g_valve != -1)
+        g_ammo_offsets[g_valve] = 310;
+
     g_gearbox = GetGameIndex("gearbox");
+    if(g_gearbox != -1)
+        g_ammo_offsets[g_gearbox] = 354;
+
+    g_dmc = GetGameIndex("dmc");
+    if(g_dmc != -1)
+        g_ammo_offsets[g_dmc] = 296;
+
     g_cstrike = GetGameIndex("cstrike");
+    if(g_cstrike != -1)
+        g_ammo_offsets[g_cstrike] = 376;
 
     set_task(0.0, "LoadWeaponModelIndices");
 }
@@ -155,58 +171,70 @@ public Equip() {
             return;
     }
 
+    new ammo[32];
+    for(new i = 0; i < 32; i++)
+        ammo[i] = get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i)
+
     new item = fm_give_item(g_equip_player, classname);
     g_equip_delete = item > 0;
+    
+    for(new i = 0; i < 32; i++)
+        if(ammo[i] != get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i))
+            g_equip_delete = true;
+
+    if(playerOwner == g_dmc && item > 0) {
+        fm_remove_entity(item);
+    }
 }
 
 public DeleteWeaponbox() {
     unset_entity_pickup(g_equip_item);
 
-    //delete the original weaponbox by mere thought
-    fm_call_think(g_equip_item);
-
-    //turn armoury_entity invisible and untouchable
-    set_pev(g_equip_item, pev_effects, pev(g_equip_item, pev_effects) | EF_NODRAW);
-    set_pev(g_equip_item, pev_solid, SOLID_NOT);
+    new classname[32];
+    pev(g_equip_item, pev_classname, classname, 32);
+    if(equal(classname, "weaponbox")) {
+        //delete the original weaponbox by mere thought
+        fm_call_think(g_equip_item);
+    } else if(equal(classname, "armoury_entity")) {
+        //turn armoury_entity invisible and untouchable
+        set_pev(g_equip_item, pev_effects, pev(g_equip_item, pev_effects) | EF_NODRAW);
+        set_pev(g_equip_item, pev_solid, SOLID_NOT);
+    } else {
+        fm_remove_entity(g_equip_item);
+    }
 }
 
 public TouchPre(touched, other) {
     if(IsPickupNative(touched, other))
         return FMRES_HANDLED;
 
+    if(g_pickup_ignore[g_entity_pickups[touched]][other] > get_gametime())
+        return FMRES_SUPERCEDE;
+
+    g_pickup_ignore[g_entity_pickups[touched]][other] = get_gametime() + 5.0;
+
     g_equip_item = touched;
     g_equip_player = other;
+    g_equip_delete = false;
     new playerOwner = GetEntityOwner(other);
     GameContext(playerOwner, "Equip");
-    if(g_equip_delete)
+    if(g_equip_delete && pev_valid(g_equip_item))
         GameContext(GetEntityOwner(g_equip_item), "DeleteWeaponbox");
 
     return FMRES_SUPERCEDE;
 }
 
-get_analogous_category(from_game, from_category, to_game) {
-    if(from_game == to_game)
-        return from_category;
+get_analogous_category(from_game, const classname[], to_game) {
+    if(!get_game_categories(to_game))
+        return -1;
 
-    new bool:from_valve = from_game == g_valve || from_game == g_gearbox;
-    new bool:to_valve = to_game == g_valve || to_game == g_gearbox;
-    if(from_valve && to_valve)
-        return from_category;
+    new from_category, from_item;
+    if(find_weapon(from_game, classname, from_category, from_item))
+        for(new i = 0; i < get_game_categories(to_game); i++)
+            if(equal(get_game_category(from_game, from_category), get_game_category(to_game, i)))
+                return i;
 
-    if((from_valve || to_valve) && from_category <= e_valve_grenades)
-        return from_category;
-
-    if(from_valve) {
-        if(to_game == g_cstrike)
-            return e_cstrike_rifles;
-    }
-
-    if(from_game == g_cstrike) {
-        if(to_valve)
-            return random(2) ? e_valve_launchers : e_valve_energy;
-    }
-
-    return -1;
+    return random(get_game_categories(to_game));
 }
 
 get_1to1_mappings(const from_classname[], to_game, to_classname[], to_classname_len) {
@@ -272,11 +300,32 @@ public OnWeaponboxCreate(entity) {
     PreparePickup(entity, classname);
 }
 
+public OnDmcBackpackCreate(entity) {
+    new netname[32];
+    pev(entity, pev_netname, netname, 32);
+
+    if(equal(netname, "Double-barrelled Shotgun"))
+        PreparePickup(entity, "weapon_supershotgun");
+    else if(equal(netname, "Nailgun"))
+        PreparePickup(entity, "weapon_nailgun");
+    else if(equal(netname, "Super Nailgun"))
+        PreparePickup(entity, "weapon_supernailgun");
+    else if(equal(netname, "Grenade Launcher"))
+        PreparePickup(entity, "weapon_grenadelauncher");
+    else if(equal(netname, "Rocket Launcher"))
+        PreparePickup(entity, "weapon_rocketlauncher");
+    else if(equal(netname, "Thunderbolt"))
+        PreparePickup(entity, "weapon_lightning");
+    else
+        PreparePickup(entity, netname);
+}
+
 PreparePickup(entity, const classname[]) {
+    for(new iPickup = 0; iPickup < maxPickups; iPickup++)
+        for(new iPlayer = 1; iPlayer <= 32; iPlayer++)
+            g_pickup_ignore[iPickup][iPlayer] = 0.0;
+
     new wbOwner = GetEntityOwner(entity);
-    new wbCategory, wbItem;
-    if(!find_weapon(wbOwner, classname, wbCategory, wbItem))
-        return;
 
     //+1 to be truthy
     if(++g_pickup_pos >= maxPickups)
@@ -289,7 +338,7 @@ PreparePickup(entity, const classname[]) {
         get_1to1_mappings(classname, iGame, g_pickup_classname[iGame][pos], 32);
         new newCategory, newItem;
         if(!find_weapon(iGame, g_pickup_classname[iGame][pos], newCategory, newItem)) {
-            newCategory = get_analogous_category(wbOwner, wbCategory, iGame);
+            newCategory = get_analogous_category(wbOwner, g_pickup_classname[iGame][pos], iGame);
             if(newCategory == -1) {
                 g_pickup_classname[iGame][pos] = "";
                 g_pickup_modelindex[iGame][pos] = 0;
@@ -318,6 +367,9 @@ public CreateNamedEntityPost(iClassname) {
         if(equal(classname, "weapon_shield")) {
             //server_print("weapon_shield");
             PreparePickup(entity, classname);
+        }
+        if(equal(classname, "item_backpack")) {
+            set_task(0.0, "OnDmcBackpackCreate", entity);
         }
         
         //TODO hl weapon_...
