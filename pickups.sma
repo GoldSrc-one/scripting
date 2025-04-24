@@ -140,6 +140,8 @@ public Equip() {
     new pos = g_entity_pickups[g_equip_item];
     new classname[32];
     copy(classname, 32, g_pickup_classname[playerOwner][pos]);
+    if(!classname[0])
+        return;
 
     if(playerOwner == g_cstrike) {
         new bool:is_pistol = false;
@@ -205,8 +207,8 @@ public DeleteWeaponbox() {
 }
 
 public TouchPre(touched, other) {
-    if(IsPickupNative(touched, other))
-        return FMRES_HANDLED;
+    if(IsPickupNative(touched, other) || !is_user_alive(other))
+        return FMRES_IGNORED;
 
     if(g_pickup_ignore[g_entity_pickups[touched]][other] > get_gametime())
         return FMRES_SUPERCEDE;
