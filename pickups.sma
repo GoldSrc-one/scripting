@@ -59,7 +59,20 @@ public plugin_init() {
     if(g_cstrike != -1)
         g_ammo_offsets[g_cstrike] = 376;
 
+    if(g_dmc != -1)
+        GameContext(g_dmc, "precache_dmc_items");
+    
     set_task(0.0, "LoadWeaponModelIndices");
+}
+
+public precache_dmc_items() {
+    for(new iCategory = 0; iCategory < get_game_categories(g_dmc); iCategory++) {
+        for(new iItem = 0; iItem < get_game_category_items(g_dmc, iCategory); iItem++) {
+            new item = fm_create_entity(get_game_category_item(g_dmc, iCategory, iItem));
+            fm_DispatchSpawn(item);
+            fm_remove_entity(item);
+        }
+    }
 }
 
 new g_game;
@@ -194,16 +207,33 @@ public DeleteWeaponbox() {
 
     new classname[32];
     pev(g_equip_item, pev_classname, classname, 32);
-    if(equal(classname, "weaponbox")) {
-        //delete the original weaponbox by mere thought
-        fm_call_think(g_equip_item);
-    } else if(equal(classname, "armoury_entity")) {
+    if(equal(classname, "armoury_entity")) {
         //turn armoury_entity invisible and untouchable
         set_pev(g_equip_item, pev_effects, pev(g_equip_item, pev_effects) | EF_NODRAW);
         set_pev(g_equip_item, pev_solid, SOLID_NOT);
-    } else {
-        fm_remove_entity(g_equip_item);
+        return;
     }
+
+    if(equal(classname, "weaponbox")) {
+        //delete the original weaponbox by mere thought
+        fm_call_think(g_equip_item);
+    }
+
+    //still alive?
+    if(pev_valid(g_equip_item)) {
+        new numEntities = global_get(glb_maxEntities);
+        for (new i = get_maxplayers() + 1; i < numEntities; i++) {
+            if (!pev_valid(i))
+                continue;
+
+            if (pev(i, pev_owner) != g_equip_item)
+                continue;
+
+            fm_remove_entity(i);
+        }
+    }
+
+    fm_remove_entity(g_equip_item);
 }
 
 public TouchPre(touched, other) {
@@ -283,7 +313,7 @@ bool:find_weapon(iGame, const classname[], &found_category, &found_item) {
 
 public OnWeaponboxCreate(entity) {
     new classname[32];
-    new numEntities = fm_entity_count();
+    new numEntities = global_get(glb_maxEntities);
     for (new i = get_maxplayers() + 1; i < numEntities; i++) {
         if (!pev_valid(i))
             continue;
@@ -295,9 +325,6 @@ public OnWeaponboxCreate(entity) {
     }
 
     //server_print("weaponbox: %s", classname);
-
-    if(!classname[0])
-        return;
 
     PreparePickup(entity, classname);
 }
@@ -328,6 +355,14 @@ PreparePickup(entity, const classname[]) {
             g_pickup_ignore[iPickup][iPlayer] = 0.0;
 
     new wbOwner = GetEntityOwner(entity);
+
+    //don't eat the C4!
+    if(wbOwner == g_cstrike) {
+        new model[64];
+        pev(entity, pev_model, model, 64);
+        if(equal(model, "models/w_backpack.mdl") || equal(model, "cstrike/models/w_backpack.mdl"))
+            return;
+    }
 
     //+1 to be truthy
     if(++g_pickup_pos >= maxPickups)
@@ -381,7 +416,7 @@ public CreateNamedEntityPost(iClassname) {
 
 public logevent_round_start() {
     new classname[32];
-    new numEntities = fm_entity_count();
+    new numEntities = global_get(glb_maxEntities);
     for (new entity = get_maxplayers() + 1; entity < numEntities; entity++) {
         unset_entity_pickup(entity);
 
@@ -404,6 +439,8 @@ unset_entity_pickup(entity) {
     //server_print("unset_entity_pickup %d", entity);
     if(g_entity_pickups[entity] == g_pickup_pos) {
         g_pickup_pos--;
+        if(g_pickup_pos <= 0)
+            g_pickup_pos = maxPickups - 1;
     }
     g_entity_pickups[entity] = 0;
 }
