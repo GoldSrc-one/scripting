@@ -1,15 +1,20 @@
 #include <amxmodx>
-#include <engine>
+#include <fakemeta>
 
 #include "crossplay"
+
+new g_dmc = -1;
 
 public plugin_init() {
     register_plugin("LetMePlay", "0.0", "GoldSrc.one");
     register_clcmd("say letmeplay", "say_letmeplay");
     register_clcmd("say /letmeplay", "say_letmeplay");
     register_clcmd("say !letmeplay", "say_letmeplay");
+    register_forward(FM_CmdStart, "CmdStartPre", 0)
     
     set_task(0.5, "show_message", _, _, _, "b");
+
+    g_dmc = GetGameIndex("dmc");
 }
 
 can_replace_bot(player_id){
@@ -19,10 +24,10 @@ can_replace_bot(player_id){
     if(is_user_alive(player_id))
         return false;
 
-    if(!entity_get_int(player_id, EV_INT_iuser1))
+    if(!pev(player_id, pev_iuser1))
         return false;
     
-    new bot_id = entity_get_int(player_id, EV_INT_iuser2);
+    new bot_id = pev(player_id, pev_iuser2);
 
     if(bot_id < 1 || bot_id > get_maxplayers())
         return false;
@@ -41,6 +46,9 @@ can_replace_bot(player_id){
     if(!equal(player_team, bot_team))
         return false;
 
+    if(GetEntityOwner(player_id) == g_dmc && (pev(player_id, pev_flags) & FL_DUCKING))
+        return false;
+
     return true;
 }
 
@@ -53,29 +61,31 @@ public letmeplay(player_id) {
     if(!can_replace_bot(player_id))
 		return PLUGIN_HANDLED;
         
-    new bot_id = entity_get_int(player_id, EV_INT_iuser2);
+    new bot_id = pev(player_id, pev_iuser2);
     
-    entity_set_int(player_id, EV_INT_iuser1, 0);
+    set_pev(player_id, pev_iuser1, 0);
 
     g_player_id = player_id;
     GameContext(GetEntityOwner(player_id), "spawn_player");
 
     new Float:origin[3];
-    entity_get_vector(bot_id, EV_VEC_origin, origin);
-    entity_set_vector(player_id, EV_VEC_origin, origin);
+    pev(bot_id, pev_origin, origin);
+    set_pev(player_id, pev_origin, origin);
 
     new Float:angles[3];
-    entity_get_vector(bot_id, EV_VEC_angles, angles);
-    entity_set_vector(player_id, EV_VEC_angles, angles);
+    pev(bot_id, pev_angles, angles);
+    set_pev(player_id, pev_angles, angles);
 
     new Float:velocity[3];
-    entity_get_vector(bot_id, EV_VEC_velocity, velocity);
-    entity_set_vector(player_id, EV_VEC_velocity, velocity);
+    pev(bot_id, pev_velocity, velocity);
+    set_pev(player_id, pev_velocity, velocity);
 
-    new flags = entity_get_int(bot_id, EV_INT_flags);
+    new flags = pev(bot_id, pev_flags);
     flags &= ~FL_FAKECLIENT;
     flags &= ~(1 << 27);
-    entity_set_int(player_id, EV_INT_flags, flags);
+    set_pev(player_id, pev_flags, flags);
+    
+    set_pev(player_id, pev_nextthink, -1.0);
 
     user_kill(bot_id, 1);
 
@@ -91,12 +101,25 @@ public say_letmeplay(player_id) {
     return PLUGIN_HANDLED;
 }
 
+public CmdStartPre(player, cmd, random_seed)
+{
+    if(!(get_uc(cmd, UC_Buttons) & IN_USE))
+        return FMRES_IGNORED;
+
+    if(!can_replace_bot(player))
+	    return FMRES_IGNORED;
+    
+    set_task(0.0, "letmeplay", player);
+
+    return FMRES_HANDLED;
+}
+
 public show_message() {
     for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
         if(!can_replace_bot(player_id))
             continue;
 
         set_hudmessage(255, 127, 0, -1.0, 0.55, 0, 0.0, 0.5, 0.25, 0.25, -1);
-        show_hudmessage(player_id, "Say /letmeplay to respawn in place of this bot."); 
+        show_hudmessage(player_id, "Press E to respawn in place of this bot."); 
     }
 }
