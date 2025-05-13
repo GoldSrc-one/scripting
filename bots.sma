@@ -8,6 +8,7 @@ new g_bots_melee;
 new g_bot_difficulty;
 new g_valve = -1;
 new g_gearbox = -1;
+new g_dmc = -1;
 new g_cstrike = -1;
 new g_difficulties[][] = {"Easy", "Normal", "Hard", "Expert"}
 new Float:g_factors[MAX_GAMES];
@@ -15,6 +16,7 @@ new Float:g_factors[MAX_GAMES];
 const g_bots_think_task = 1;
 const g_vote_menu_task = 100;
 const g_vote_action_task = 200;
+const g_dmc_notarget_think_task = 1;
 
 public plugin_init() {
     register_plugin("Bots", "0.0", "GoldSrc.one");
@@ -40,6 +42,10 @@ public plugin_init() {
     g_gearbox = GetGameIndex("gearbox");
     if(g_gearbox != -1)
         g_factors[g_gearbox] = 0.45 + random_float(-0.01, 0.01);
+
+    g_dmc = GetGameIndex("dmc");
+    if(g_dmc != -1)
+        set_task(0.1, "dmc_notarget_think", g_dmc_notarget_think_task, _, _, "b");
 }
 
 public CreateFakeClientPre(netname[]) {
@@ -441,4 +447,27 @@ public bots_advertise(player_id) {
     g_last_advert = get_gametime();
     client_print(0, print_chat, "If you wish to change the bot count or difficulty, say /bots to open the bots menu.");
     return PLUGIN_CONTINUE;
+}
+
+public dmc_notarget_think() {
+    for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
+        if(!is_user_alive(player_id))
+            continue;
+
+        if(GetEntityOwner(player_id) != g_dmc)
+            continue;
+        
+        new bool:notarget = false;
+        if(pev(player_id, pev_renderfx) == kRenderFxGlowShell) {
+            new Float:renderamt;
+            pev(player_id, pev_renderamt, renderamt);
+            if(renderamt == 5.0 || pev(player_id, pev_rendermode) == kRenderTransColor)
+                notarget = true;
+        }
+        
+        if(notarget)
+            set_pev(player_id, pev_flags, pev(player_id, pev_flags) | FL_NOTARGET);
+        else
+            set_pev(player_id, pev_flags, pev(player_id, pev_flags) & ~FL_NOTARGET);
+    }
 }

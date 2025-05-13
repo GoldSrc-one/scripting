@@ -484,19 +484,7 @@ public ActivateDmcPowerup() {
 
     fm_fake_touch(powerup, g_player_id);
     fm_remove_entity(powerup);
-
-    new Float:renderamt;
-    pev(g_player_id, pev_renderamt, renderamt);
-    if(renderamt <= 5.0) {
-        set_pev(g_player_id, pev_flags, pev(g_player_id, pev_flags) | FL_NOTARGET);
-        set_task(dmc_powerup_duration, "RemoveNoTarget", g_player_id);
-    }
-
     return FMRES_HANDLED;
-}
-
-public RemoveNoTarget(player_id) {
-    set_pev(player_id, pev_flags, pev(player_id, pev_flags) & ~FL_NOTARGET);
 }
 
 menu_addwishcategory(player_id, menu, name[]){
