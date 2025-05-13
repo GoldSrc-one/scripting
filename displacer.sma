@@ -31,12 +31,16 @@ public ThinkPost(entity) {
 }
 
 public TouchPre(touched, other) {
+    if(!pev_valid(touched))
+        return FMRES_IGNORED;
+
     new classname[24];
     pev(touched, pev_classname, classname, 24);
-    if(equal(classname, "displacer_ball")) {
-        g_displacer = true;
-        g_player_id = other;
-    }
+    if(!equal(classname, "displacer_ball"))
+        return FMRES_IGNORED;
+
+    g_displacer = true;
+    g_player_id = other;
     return FMRES_HANDLED;
 }
 
