@@ -7,6 +7,9 @@ new g_dmc = -1;
 
 public plugin_init() {
     register_plugin("LetMePlay", "0.0", "GoldSrc.one");
+    if(GetEntityOwner(0) != GetGameIndex("cstrike"))
+        return;
+
     register_clcmd("say letmeplay", "say_letmeplay");
     register_clcmd("say /letmeplay", "say_letmeplay");
     register_clcmd("say !letmeplay", "say_letmeplay");

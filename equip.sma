@@ -21,15 +21,22 @@ new g_cstrike_category_names[][32] = { "T Pistol", "CT Pistol", "T Primary", "CT
 new g_gearbox_category_names[][32] = { "Melee", "Primary", "Special", "PowerUp" };
 new g_dmc_category_names[][32] = { "Primary", "Special", "PowerUp" };
 
+new bool:g_active = true;
 new bool:g_pistol_only = false;
 
 public plugin_init() {
+    register_plugin("Equip", "0.0", "GoldSrc.one");
+
+    if(GetEntityOwner(0) != GetGameIndex("cstrike")) {
+        g_active = false;
+        return;
+    }
+
     new mapname[64];
     get_mapname(mapname, 64);
     if(equal(mapname, "fy_", 3) && !equal(mapname, "fy_nuketown"))
         g_pistol_only = true;
 
-    register_plugin("Equip", "0.0", "GoldSrc.one");
     register_clcmd("say wish", "wish_menu");
     register_clcmd("say /wish", "wish_menu");
     register_clcmd("say !wish", "wish_menu");
@@ -104,8 +111,12 @@ public add_equip_prevention() {
 }
 
 public PrePlayerSpawn(player_id) {
+    if(!g_active)
+        return;
+
     if(!is_user_connected(player_id))
         return;
+
     new game = GetEntityOwner(player_id);
     if(game != g_dmc)
         GameContext(game, "add_equip_prevention");
@@ -396,6 +407,9 @@ public equip_dmc() {
 }
 
 public PostPlayerSpawn(player_id) {
+    if(!g_active)
+        return;
+        
     if(!is_user_connected(player_id))
         return;
 

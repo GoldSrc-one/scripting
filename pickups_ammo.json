@@ -1,0 +1,64 @@
+{
+    "valve": {
+        "weapon_9mmhandgun": "ammo_9mmbox",
+        "weapon_357": "ammo_357",
+        "weapon_shotgun": "ammo_buckshot",
+        "weapon_9mmAR": "ammo_9mmAR",
+        "weapon_crossbow": "ammo_crossbow",
+        "weapon_rpg": "ammo_rpgclip",
+        "weapon_gauss": "ammo_gaussclip",
+        "weapon_egon": "ammo_egonclip"
+    },
+    "cstrike": {
+        "weapon_usp": "ammo_45acp",
+        "weapon_fiveseven": "ammo_57mm",
+        "weapon_deagle": "ammo_50ae",
+        "weapon_p228": "ammo_357sig",
+        "weapon_glock18": "ammo_9mm",
+        "weapon_elite": "ammo_9mm",
+        "weapon_m3": "ammo_buckshot",
+        "weapon_xm1014": "ammo_buckshot",
+        "weapon_mac10": "ammo_9mm",
+        "weapon_ump45": "ammo_45acp",
+        "weapon_p90": "ammo_57mm",
+        "weapon_mp5navy": "ammo_9mm",
+        "weapon_tmp": "ammo_9mm",
+        "weapon_awp": "ammo_338magnum",
+        "weapon_g3sg1": "ammo_762nato",
+        "weapon_scout": "ammo_762nato",
+        "weapon_sg550": "ammo_556nato",
+        "weapon_ak47": "ammo_762nato",
+        "weapon_m249": "ammo_556natobox",
+        "weapon_m4a1": "ammo_556nato",
+        "weapon_aug": "ammo_556nato",
+        "weapon_sg552": "ammo_556nato",
+        "weapon_galil": "ammo_556nato",
+        "weapon_famas": "ammo_556nato"
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
