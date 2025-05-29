@@ -23,7 +23,8 @@ const maxWeaponsInCategory = 16;
 new g_modelindices[MAX_GAMES][MAX_CATEGORIES][maxWeaponsInCategory];
 new g_ammo_modelindices[MAX_GAMES][MAX_AMMO];
 
-new g_valve_tripmine_modelindex = -1;
+new g_tripmine_modelindex[MAX_GAMES];
+new g_snark_modelindex[MAX_GAMES];
 
 const g_cstrike_pistol_mask  = 0x04030C06; //0000 0100 0000 0011 0000 1100 0000 0110
 const g_cstrike_primary_mask = 0x59FCF1A8; //0101 1001 1111 1100 1111 0001 1010 1000
@@ -37,7 +38,7 @@ new g_ammo_offsets[MAX_GAMES];
 
 public plugin_precache() {
     register_plugin("Pickups", "0.0", "GoldSrc.one");
-    register_forward(FM_SetOrigin, "SetOriginPost", 1);
+    register_forward(FM_Spawn, "SpawnPost", 1);
 }
 
 new g_game;
@@ -46,7 +47,7 @@ public plugin_init() {
     register_forward(FM_Touch, "TouchPre", 0);
     register_forward(FM_CreateNamedEntity, "CreateNamedEntityPost", 1);
     register_forward(FM_OnFreeEntPrivateData, "OnFreeEntPrivateDataPost", 1);
-
+    register_forward(FM_EmitSound, "EmitSoundPost", 1);
 
     g_valve = GetGameIndex("valve");
     if(g_valve != -1)
@@ -58,14 +59,11 @@ public plugin_init() {
 
     g_dmc = GetGameIndex("dmc");
     if(g_dmc != -1)
-        g_ammo_offsets[g_dmc] = 296;
+        g_ammo_offsets[g_dmc] = 387; //m_pCurrentAmmo and following members instead of m_rgAmmo
 
     g_cstrike = GetGameIndex("cstrike");
     if(g_cstrike != -1)
         g_ammo_offsets[g_cstrike] = 376;
-
-
-
 
     if(g_dmc != -1)
         GameContext(g_dmc, "precache_dmc_items");
@@ -94,6 +92,9 @@ public precache_dmc_items() {
     for(new iCategory = 0; iCategory < get_game_categories(g_dmc); iCategory++)
         for(new iItem = 0; iItem < get_game_category_items(g_dmc, iCategory); iItem++)
             PrecacheItem(get_game_category_item(g_dmc, iCategory, iItem));
+    
+    for(new iAmmo = 0; iAmmo < get_num_ammo(g_dmc); iAmmo++)
+        PrecacheItem(get_ammo_classname(g_dmc, iAmmo));
 }
 
 /*public PrecacheAmmo() {
@@ -101,7 +102,13 @@ public precache_dmc_items() {
         PrecacheItem(g_ammo_classname[iAmmo]);
 }*/
 
-public LoadWeaponModelIndices(){
+new bool:g_weapon_models_loaded = false;
+public LoadWeaponModelIndices() {
+    if(g_weapon_models_loaded)
+        return;
+
+    g_weapon_models_loaded = true;
+
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         g_game = iGame;
         GameContext(iGame, "LoadGameWeaponModelIndices");
@@ -131,17 +138,15 @@ public LoadGameWeaponModelIndices() {
             new modelIndex = GetModelIndexFromClassname(classname);
             g_modelindices[g_game][iCategory][iItem] = modelIndex;
 
-            if(equal(classname, "weapon_tripmine")) {
-                //server_print("weapon_tripmine: %d %d", g_game, modelIndex);
-                if(g_valve_tripmine_modelindex != -1 && g_valve_tripmine_modelindex != modelIndex)
-                    server_print("Multiple weapon_tripmines with different models?");
-                g_valve_tripmine_modelindex = modelIndex;
-            }
+            if(equal(classname, "weapon_tripmine"))
+                g_tripmine_modelindex[g_game] = modelIndex;
+            if(equal(classname, "weapon_snark"))
+                g_snark_modelindex[g_game] = modelIndex;
         }
     }
     for(new iAmmo = 0; iAmmo < get_num_ammo(g_game); iAmmo++) {
         g_ammo_modelindices[g_game][iAmmo] = GetModelIndexFromClassname(get_ammo_classname(g_game, iAmmo));
-        //server_print("%d %d %s %d", g_game, iAmmo, g_ammo_classname[iAmmo], g_ammo_model[g_game][iAmmo]);
+        //server_print("%d %d %s %d", g_game, iAmmo, get_ammo_classname(g_game, iAmmo), g_ammo_modelindices[g_game][iAmmo]);
     }
 }
 
@@ -162,9 +167,18 @@ public AddToFullPackPost(es_handle, e, ent, host, hostflags, player, pSet[]) {
     new hostOwner = GetEntityOwner(host);
     new model = g_pickup_modelindex[hostOwner][ent];
     set_es(es_handle, ES_ModelIndex, model);
-    if(model == g_valve_tripmine_modelindex) {
-        set_es(es_handle, ES_Body, 3);
-        set_es(es_handle, ES_Sequence, 8);
+    set_es(es_handle, ES_Body, 0);
+    set_es(es_handle, ES_Sequence, 0);
+    set_es(es_handle, ES_AnimTime, 0.0);
+    set_es(es_handle, ES_FrameRate, 0.0);
+    if(model) {
+        if(model == g_tripmine_modelindex[hostOwner]) {
+            set_es(es_handle, ES_Body, 3);
+            set_es(es_handle, ES_Sequence, 8);
+        } else if(model == g_snark_modelindex[hostOwner]) {
+            set_es(es_handle, ES_Sequence, 1);
+            set_es(es_handle, ES_FrameRate, 1.0);
+        }
     }
     
     return FMRES_HANDLED;
@@ -277,7 +291,7 @@ public DeleteWeaponbox() {
 }
 
 public TouchPre(touched, other) {
-    if(IsPickupNative(touched, other) || !is_user_alive(other))
+    if(IsPickupNative(touched, other) || !is_user_alive(other) || (pev(touched, pev_effects) & EF_NODRAW))
         return FMRES_IGNORED;
 
     if(g_pickup_ignore[touched][other] > get_gametime())
@@ -423,7 +437,7 @@ public OnDmcBackpackCreate(entity) {
 }
 
 public OnItemMaterialize(entity) {
-    if(!pev_valid(entity) || (pev(entity, pev_effects) & EF_NODRAW) || pev(entity, pev_solid) != SOLID_TRIGGER)
+    if(!pev_valid(entity) || (pev(entity, pev_effects) & EF_NODRAW))
         return;
 
     new classname[32];
@@ -431,12 +445,19 @@ public OnItemMaterialize(entity) {
     if(contain(classname, "ammo_") != 0 && contain(classname, "item_") != 0 && contain(classname, "weapon_") != 0)
         return;
 
+    LoadWeaponModelIndices();
     PreparePickup(entity, classname);
 }
 
 bool:IsAmmo(const classname[]) {
     if(contain(classname, "ammo_") == 0)
         return true;
+
+    if(GetEntityOwner(0) == g_dmc)
+        for(new iAmmo = 0; iAmmo < get_num_ammo(g_dmc); iAmmo++)
+            if(equal(classname, get_ammo_classname(g_dmc, iAmmo)))
+                return true;
+    
     return false;
 }
 
@@ -469,7 +490,7 @@ PrepareAmmoPickup(entity) {
         weaponDistance = distance;
     }
 
-    //server_print("neaerstWeapon: %d %f", nearestWeapon, weaponDistance);
+    //server_print("nearestWeapon: %d %f", nearestWeapon, weaponDistance);
 
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         g_pickup_classname[iGame][entity] = "";
@@ -485,6 +506,7 @@ PrepareAmmoPickup(entity) {
             g_pickup_modelindex[iGame][entity] = g_ammo_modelindices[iGame][iAmmo];
             break;
         }
+        //server_print("^t%d %s %d", iGame, g_pickup_classname[iGame][entity], g_pickup_modelindex[iGame][entity]);
     }
 }
 
@@ -506,7 +528,7 @@ PreparePickup(entity, const classname[]) {
 
     g_entity_pickups[entity] = true;
 
-    //server_print("%d %s", entity, classname);
+    //server_print("PreparePickup: %d %s", entity, classname);
 
     if(IsAmmo(classname)) {
         PrepareAmmoPickup(entity);
@@ -529,7 +551,7 @@ PreparePickup(entity, const classname[]) {
         }
         g_pickup_modelindex[iGame][entity] = g_modelindices[iGame][newCategory][newItem];
 
-        //server_print("^t%d: %s %d", iGame, g_pickup_classname[iGame][pos], g_pickup_modelindex[iGame][pos]);
+        //server_print("^t%d: %s %d", iGame, g_pickup_classname[iGame][entity], g_pickup_modelindex[iGame][entity]);
     }
 
     new Float:entityOrigin[3];
@@ -560,6 +582,8 @@ public CreateNamedEntityPost(iClassname) {
 
         new classname[32];
         fm_eng_get_string(iClassname, classname, 32);
+        //server_print("CreateNamedEntityPost: %d %s", entity, classname);
+
         if(equal(classname, "weaponbox")) {
             set_task(0.0, "OnWeaponboxCreate", entity);
         }
@@ -574,24 +598,34 @@ public CreateNamedEntityPost(iClassname) {
     return FMRES_HANDLED;
 }
 
-public SetOriginPost(entity, Float:origin[3]) {
-    if((pev(entity, pev_effects) & EF_NODRAW) || pev(entity, pev_solid) != SOLID_TRIGGER)
-        return FMRES_IGNORED;
-
-    new classname[32];
-    pev(entity, pev_classname, classname, 32);
-    if(contain(classname, "ammo_") != 0 && contain(classname, "item_") != 0 && contain(classname, "weapon_") != 0)
+public SpawnPost(entity) {
+    if(entity && !pev_valid(entity))
         return FMRES_IGNORED;
 
     set_task(0.0, "OnItemMaterialize", entity);
     return FMRES_HANDLED;
 }
 
+public EmitSoundPost(entity, channel, const sample[], Float:volume, attenuation, flags, pitch) {
+    if(channel != CHAN_WEAPON || !g_entity_pickups[entity])
+        return FMRES_IGNORED;
+
+    if(equal(sample, "items/suitchargeok1.wav") || equal(sample, "items/itembk2.wav")) {
+        OnItemMaterialize(entity);
+        return FMRES_HANDLED;
+    }
+    return FMRES_IGNORED;
+}
+
 public Respawn(entity) {
     if(!pev_valid(entity) || !(pev(entity, pev_effects) & EF_NODRAW))
         return;
 
-    engfunc(EngFunc_EmitSound, entity, CHAN_WEAPON, "items/suitchargeok1.wav", 1.0, ATTN_NORM, 0, 150);
+    if(GetEntityOwner(0) == g_dmc) {
+        engfunc(EngFunc_EmitSound, entity, CHAN_WEAPON, "items/itembk2.wav", 1.0, ATTN_NORM, 0, 100);
+    } else {
+        engfunc(EngFunc_EmitSound, entity, CHAN_WEAPON, "items/suitchargeok1.wav", 1.0, ATTN_NORM, 0, 150);
+    }
     set_pev(entity, pev_effects, (pev(entity, pev_effects) & ~EF_NODRAW) | EF_MUZZLEFLASH);
     set_pev(entity, pev_solid, SOLID_TRIGGER);
     OnItemMaterialize(entity);

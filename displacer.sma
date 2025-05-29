@@ -1,8 +1,12 @@
 #include <amxmodx>
 #include <fakemeta>
+#include "crossplay"
 
 public plugin_init() {
     register_plugin("Displacer", "0.0", "GoldSrc.one");
+
+    if(GetEntityOwner(0) != GetGameIndex("cstrike"))
+        return;
 
     register_forward(FM_Think, "ThinkPre", 0);
     register_forward(FM_Think, "ThinkPost", 1);

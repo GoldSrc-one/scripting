@@ -34,6 +34,30 @@
         "weapon_sg552": "ammo_556nato",
         "weapon_galil": "ammo_556nato",
         "weapon_famas": "ammo_556nato"
+    },
+    "gearbox": {
+        "weapon_9mmhandgun": "ammo_9mmbox",
+        "weapon_357": "ammo_357",
+        "weapon_shotgun": "ammo_buckshot",
+        "weapon_9mmAR": "ammo_9mmAR",
+        "weapon_crossbow": "ammo_crossbow",
+        "weapon_rpg": "ammo_rpgclip",
+        "weapon_gauss": "ammo_gaussclip",
+        "weapon_egon": "ammo_egonclip",
+        "weapon_displacer": "ammo_egonclip",
+        "weapon_eagle": "ammo_eagleclip",
+        "weapon_m249": "ammo_556",
+        "weapon_sniperrifle": "ammo_762",
+        "weapon_sporelauncher": "ammo_spore"
+    },
+    "dmc": {
+        "weapon_grenadelauncher": "item_rockets",
+        "weapon_lightning": "item_cells",
+        "weapon_nailgun": "item_spikes",
+        "weapon_quakegun": "item_shells",
+        "weapon_rocketlauncher": "item_rockets",
+        "weapon_supernailgun": "item_spikes",
+        "weapon_supershotgun": "item_shells"
     }
 }
 
