@@ -11,6 +11,7 @@ new g_cstrike;
 
 #include "pickups_gen"
 #include "pickups_ammo_gen"
+#include "pickups_items"
 
 const maxEntities = 2048;
 
@@ -22,6 +23,7 @@ new Float:g_pickup_ignore[maxEntities][33];
 const maxWeaponsInCategory = 16;
 new g_modelindices[MAX_GAMES][MAX_CATEGORIES][maxWeaponsInCategory];
 new g_ammo_modelindices[MAX_GAMES][MAX_AMMO];
+new g_item_modelindices[MAX_GAMES][MAX_ITEMS];
 
 new g_tripmine_modelindex[MAX_GAMES];
 new g_snark_modelindex[MAX_GAMES];
@@ -65,16 +67,14 @@ public plugin_init() {
     if(g_cstrike != -1)
         g_ammo_offsets[g_cstrike] = 376;
 
-    if(g_dmc != -1)
-        GameContext(g_dmc, "precache_dmc_items");
-
-    if(GetEntityOwner(0) == g_cstrike){
-        register_logevent("logevent_round_start", 2, "1=Round_Start");
+    for(new iGame = 0; iGame < GetNumGames(); iGame++) {
+        g_game = iGame;
+        GameContext(iGame, "PrecacheItems");
     }
-    /*else{
-        for(new iGame = 0; iGame < GetNumGames(); iGame++)
-            GameContext(iGame, "PrecacheAmmo");
-    }*/
+
+    if(GetEntityOwner(0) == g_cstrike)
+        register_logevent("logevent_round_start", 2, "1=Round_Start");
+    
     
     set_task(0.0, "LoadWeaponModelIndices");
 }
@@ -88,19 +88,19 @@ PrecacheItem(const classname[]) {
     fm_remove_entity(item);
 }
 
-public precache_dmc_items() {
-    for(new iCategory = 0; iCategory < get_game_categories(g_dmc); iCategory++)
-        for(new iItem = 0; iItem < get_game_category_items(g_dmc, iCategory); iItem++)
-            PrecacheItem(get_game_category_item(g_dmc, iCategory, iItem));
+public PrecacheItems() {
+    if(g_game == g_dmc) {
+        for(new iCategory = 0; iCategory < get_game_categories(g_game); iCategory++)
+            for(new iItem = 0; iItem < get_game_category_items(g_game, iCategory); iItem++)
+                PrecacheItem(get_game_category_item(g_game, iCategory, iItem));
     
-    for(new iAmmo = 0; iAmmo < get_num_ammo(g_dmc); iAmmo++)
-        PrecacheItem(get_ammo_classname(g_dmc, iAmmo));
+        for(new iAmmo = 0; iAmmo < get_num_ammo(g_game); iAmmo++)
+            PrecacheItem(get_ammo_classname(g_game, iAmmo));
+    }
+        
+    for(new iItem = 0; iItem < get_num_items(g_game); iItem++)
+        PrecacheItem(get_item(g_game, iItem));
 }
-
-/*public PrecacheAmmo() {
-    for(new iAmmo = 0; iAmmo < num_ammo; iAmmo++)
-        PrecacheItem(g_ammo_classname[iAmmo]);
-}*/
 
 new bool:g_weapon_models_loaded = false;
 public LoadWeaponModelIndices() {
@@ -148,6 +148,8 @@ public LoadGameWeaponModelIndices() {
         g_ammo_modelindices[g_game][iAmmo] = GetModelIndexFromClassname(get_ammo_classname(g_game, iAmmo));
         //server_print("%d %d %s %d", g_game, iAmmo, get_ammo_classname(g_game, iAmmo), g_ammo_modelindices[g_game][iAmmo]);
     }
+    for(new iItem = 0; iItem < get_num_items(g_game); iItem++)
+        g_item_modelindices[g_game][iItem] = GetModelIndexFromClassname(get_item(g_game, iItem));
 }
 
 bool:IsPickupNative(ent, host) {
@@ -234,6 +236,8 @@ public Equip() {
     new ammo[32];
     for(new i = 0; i < 32; i++)
         ammo[i] = get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i)
+    new Float:oldHealth;
+    pev(g_equip_player, pev_health, oldHealth);
 
     new item = fm_give_item(g_equip_player, classname);
     g_equip_delete = item > 0;
@@ -241,6 +245,10 @@ public Equip() {
     for(new i = 0; i < 32; i++)
         if(ammo[i] != get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i))
             g_equip_delete = true;
+    new Float:newHealth;
+    pev(g_equip_player, pev_health, newHealth);
+    if(oldHealth != newHealth)
+        g_equip_delete = true;
 
     if(playerOwner == g_dmc && item > 0) {
         fm_remove_entity(item);
@@ -461,9 +469,9 @@ bool:IsAmmo(const classname[]) {
     return false;
 }
 
-const Float:maxAmmoDistance = 1024.0;
+const Float:maxAmmoDistance = 256.0;
 
-PrepareAmmoPickup(entity) {
+PrepareAmmoPickup(entity, const classname[]) {
     new Float:entityOrigin[3];
     pev(entity, pev_origin, entityOrigin);
 
@@ -494,8 +502,17 @@ PrepareAmmoPickup(entity) {
 
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         g_pickup_classname[iGame][entity] = "";
-        g_pickup_modelindex[iGame][entity] = 0;
-        if(!nearestWeapon)
+        g_pickup_modelindex[iGame][entity] = 0;        
+        new bool:exactMatch = false;
+        for(new iAmmo = 0; iAmmo < get_num_ammo(iGame); iAmmo++) {
+            if(equal(classname, get_ammo_classname(iGame, iAmmo))) {
+                copy(g_pickup_classname[iGame][entity], 32, classname);
+                g_pickup_modelindex[iGame][entity] = g_ammo_modelindices[iGame][iAmmo];
+                exactMatch = true;
+                break;
+            }
+        }
+        if(exactMatch || !nearestWeapon)
             continue;
 
         for(new iAmmo = 0; iAmmo < get_num_ammo(iGame); iAmmo++) {
@@ -507,6 +524,46 @@ PrepareAmmoPickup(entity) {
             break;
         }
         //server_print("^t%d %s %d", iGame, g_pickup_classname[iGame][entity], g_pickup_modelindex[iGame][entity]);
+    }
+}
+
+bool:IsItem(const classname[]) {
+    if(contain(classname, "item_") == 0)
+        return true;
+
+    return false;
+}
+
+PrepareItemPickup(entity, const classname[]) {
+    for(new iGame = 0; iGame < GetNumGames(); iGame++) {
+        g_pickup_classname[iGame][entity] = "";
+        g_pickup_modelindex[iGame][entity] = 0;
+        new bool:exactMatch = false;
+        new numItems = get_num_items(iGame);
+        for(new iItem = 0; iItem < numItems; iItem++) {
+            if(equal(classname, get_item(iGame, iItem))) {
+                copy(g_pickup_classname[iGame][entity], 32, classname);
+                g_pickup_modelindex[iGame][entity] = g_item_modelindices[iGame][iItem];
+                exactMatch = true;
+                break;
+            }
+        }
+        if(exactMatch)
+            continue;
+
+        new probSum = numItems;
+        probSum = (probSum * probSum + probSum) / 2;
+        new pick = random(probSum);
+        for(new iItem = 0; iItem < numItems; iItem++) {
+            new prob = numItems - iItem;
+            if(pick >= prob) {
+                pick -= prob;
+                continue;
+            }
+            copy(g_pickup_classname[iGame][entity], 32, get_item(iGame, iItem));
+            g_pickup_modelindex[iGame][entity] = g_item_modelindices[iGame][iItem];
+            break;
+        }
     }
 }
 
@@ -531,9 +588,16 @@ PreparePickup(entity, const classname[]) {
     //server_print("PreparePickup: %d %s", entity, classname);
 
     if(IsAmmo(classname)) {
-        PrepareAmmoPickup(entity);
+        PrepareAmmoPickup(entity, classname);
         return;
     }
+
+    if(IsItem(classname)) {
+        PrepareItemPickup(entity, classname);
+        return;
+    }
+
+    //the rest of this function is "PrepareWeaponPickup"
 
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         get_1to1_mappings(classname, iGame, g_pickup_classname[iGame][entity], 32);
@@ -571,7 +635,7 @@ PreparePickup(entity, const classname[]) {
         if(get_distance_f(entityOrigin, ammoOrigin) >= maxAmmoDistance)
             continue;
         
-        PrepareAmmoPickup(iAmmo);
+        PrepareAmmoPickup(iAmmo, ammoClassname);
     }
 }
 

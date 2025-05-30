@@ -21,7 +21,7 @@ new g_cstrike_pistols[][32] = {"weapon_usp", "weapon_fiveseven", "weapon_deagle"
 new g_cstrike_shotguns[][32] = {"weapon_m3", "weapon_xm1014"}
 new g_cstrike_smgs[][32] = {"weapon_mac10", "weapon_ump45", "weapon_p90", "weapon_mp5navy", "weapon_tmp"}
 new g_cstrike_snipers[][32] = {"weapon_awp", "weapon_g3sg1", "weapon_scout", "weapon_sg550"}
-new g_cstrike_grenades[][32] = {"weapon_hegrenade", "weapon_flashbang", "weapon_shield"}
+new g_cstrike_grenades[][32] = {"weapon_hegrenade", "weapon_flashbang"}
 new g_cstrike_rifles[][32] = {"weapon_ak47", "weapon_m249", "weapon_m4a1", "weapon_aug", "weapon_sg552", "weapon_galil", "weapon_famas"}
 enum _:e_cstrike_categories {
         e_cstrike_pistols,
