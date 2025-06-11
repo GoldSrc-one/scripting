@@ -18,7 +18,7 @@
         "powerups": ["item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration"]
     },
     "dmc": {
-        "primaries": ["weapon_supershotgun", "weapon_nailgun", "weapon_supernailgun"],
+        "nailguns": ["weapon_nailgun", "weapon_supernailgun"],
         "specials": ["weapon_grenadelauncher", "weapon_rocketlauncher", "weapon_lightning"],
         "powerups": ["item_artifact_invulnerability", "item_artifact_invisibility", "item_artifact_super_damage"]
     }

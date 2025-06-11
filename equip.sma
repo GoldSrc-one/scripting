@@ -19,7 +19,9 @@ new g_wish[33][MAX_CATEGORIES];
 new g_valve_category_names[][32] = { "Pistol", "Primary", "Special", "Grenade" };
 new g_cstrike_category_names[][32] = { "T Pistol", "CT Pistol", "T Primary", "CT Primary" };
 new g_gearbox_category_names[][32] = { "Melee", "Primary", "Special", "PowerUp" };
-new g_dmc_category_names[][32] = { "Primary", "Special", "PowerUp" };
+new g_dmc_category_names[][32] = { "Nailgun", "Special", "PowerUp" };
+
+new Float:g_dmc_powerup_durations[] = {5.0, 15.0, 10.0};
 
 new bool:g_active = true;
 new bool:g_pistol_only = false;
@@ -81,10 +83,10 @@ public precache_gearbox_ctf_items(){
 }
 
 public precache_dmc_items() {
-    precache_items(g_dmc_primaries, sizeof g_dmc_primaries);
+    precache_items(g_dmc_nailguns, sizeof g_dmc_nailguns);
     precache_items(g_dmc_specials, sizeof g_dmc_specials);
     precache_items(g_dmc_powerups, sizeof g_dmc_powerups);
-    new others[][] = {"item_armor1"};
+    new others[][] = {"item_armor1", "item_shells", "item_spikes", "item_rockets", "item_cells"};
     precache_items(others, sizeof others);
 }
 
@@ -135,15 +137,19 @@ get_wish_index(category) {
     return g_should_grant_wish[g_player_id] ? g_wish[g_player_id][category] : -1;
 }
 
-get_wish_or_random(game, category) {
+get_wish_or_random_index(game, category) {
     new index = get_wish_index(category);
     if(index != -1)
         g_wish_granted[g_player_id] = true;
     if(index == -1)
         index = random(get_game_category_items(game, category));
-        
+
+    return index;
+}
+
+get_wish_or_random(game, category) {        
     new item[64];
-    copy(item, 64, get_game_category_item(game, category, index));
+    copy(item, 64, get_game_category_item(game, category, get_wish_or_random_index(game, category)));
     return item;
 }
 
@@ -382,21 +388,24 @@ public EmitSoundPre(entity, channel, sample[], Float:volume, Float:attenuation, 
 }
 
 new g_dmc_powerup[33];
-const Float:dmc_powerup_duration = 5.0;
 public equip_dmc() {
     g_dmc_powerup[g_player_id] = -1;
 
     if(!g_pistol_only) {
-        give_item_times(g_player_id, get_wish_or_random(g_dmc, e_dmc_primaries), 4, true);
-        give_item_times(g_player_id, get_wish_or_random(g_dmc, e_dmc_specials), 1, true);
-        g_dmc_powerup[g_player_id] = get_wish_index(e_dmc_powerups);
-        if(g_dmc_powerup[g_player_id] == -1) {
-            g_dmc_powerup[g_player_id] = random(get_game_category_items(g_dmc, e_dmc_powerups));
-        } else {
-            g_wish_granted[g_player_id] = true;
-        }
-        client_print(g_player_id, print_chat, "You got %s, double tap the use key to activate for %.0f seconds!", get_game_category_item(g_dmc, e_dmc_powerups, g_dmc_powerup[g_player_id]), dmc_powerup_duration);
+        give_item_times(g_player_id, "weapon_supershotgun", 1, true);
+        give_item_times(g_player_id, get_wish_or_random(g_dmc, e_dmc_nailguns), 1, true);
+        new special[32];
+        copy(special, 32, get_wish_or_random(g_dmc, e_dmc_specials));
+        give_item_times(g_player_id, special, 1, true);
+        if(equal(special, "weapon_grenadelauncher"))
+            give_item_times(g_player_id, "item_rockets", 1, true);
+
+        g_dmc_powerup[g_player_id] = get_wish_or_random_index(g_dmc, e_dmc_powerups);
+        client_print(g_player_id, print_chat, "You got %s, double tap the use key to activate for %.0f seconds!", get_game_category_item(g_dmc, e_dmc_powerups, g_dmc_powerup[g_player_id]), g_dmc_powerup_durations[g_dmc_powerup[g_player_id]]);
     }
+    give_item_times(g_player_id, "item_shells", 4, true);
+    give_item_times(g_player_id, "item_spikes", 7, true);
+    give_item_times(g_player_id, "item_cells", 1, true);
 
     if((g_round % 2) == 0) {
         give_item_times(g_player_id, "item_armor1", 1, true);
@@ -493,7 +502,7 @@ public ActivateDmcPowerup() {
     for(new i = 14; i <= 17; i++) {
         new Float:finished = get_pdata_float(powerup, i);
         if(finished > 0.0)
-            set_pdata_float(powerup, i, dmc_powerup_duration);
+            set_pdata_float(powerup, i, g_dmc_powerup_durations[g_dmc_powerup[g_player_id]]);
     }
 
     fm_fake_touch(powerup, g_player_id);

@@ -27,6 +27,9 @@ new g_item_modelindices[MAX_GAMES][MAX_ITEMS];
 
 new g_tripmine_modelindex[MAX_GAMES];
 new g_snark_modelindex[MAX_GAMES];
+new g_dmc_invisibility_mi;
+new g_dmc_super_damage_mi;
+new g_dmc_invulnerability_mi;
 
 const g_cstrike_pistol_mask  = 0x04030C06; //0000 0100 0000 0011 0000 1100 0000 0110
 const g_cstrike_primary_mask = 0x59FCF1A8; //0101 1001 1111 1100 1111 0001 1010 1000
@@ -148,8 +151,21 @@ public LoadGameWeaponModelIndices() {
         g_ammo_modelindices[g_game][iAmmo] = GetModelIndexFromClassname(get_ammo_classname(g_game, iAmmo));
         //server_print("%d %d %s %d", g_game, iAmmo, get_ammo_classname(g_game, iAmmo), g_ammo_modelindices[g_game][iAmmo]);
     }
-    for(new iItem = 0; iItem < get_num_items(g_game); iItem++)
-        g_item_modelindices[g_game][iItem] = GetModelIndexFromClassname(get_item(g_game, iItem));
+    for(new iItem = 0; iItem < get_num_items(g_game); iItem++){
+        new classname[32];
+        copy(classname, 32, get_item(g_game, iItem));
+        new modelIndex = GetModelIndexFromClassname(classname);
+        g_item_modelindices[g_game][iItem] = modelIndex;
+
+        if(g_game == g_dmc) {
+            if(equal(classname, "item_artifact_invisibility"))
+                g_dmc_invisibility_mi = modelIndex;
+            if(equal(classname, "item_artifact_super_damage"))
+                g_dmc_super_damage_mi = modelIndex;
+            if(equal(classname, "item_artifact_invulnerability"))
+                g_dmc_invulnerability_mi = modelIndex;
+        }
+    }
 }
 
 bool:IsPickupNative(ent, host) {
@@ -173,6 +189,8 @@ public AddToFullPackPost(es_handle, e, ent, host, hostflags, player, pSet[]) {
     set_es(es_handle, ES_Sequence, 0);
     set_es(es_handle, ES_AnimTime, 0.0);
     set_es(es_handle, ES_FrameRate, 0.0);
+    set_es(es_handle, ES_RenderMode, 0);
+    set_es(es_handle, ES_RenderFx, 0);
     if(model) {
         if(model == g_tripmine_modelindex[hostOwner]) {
             set_es(es_handle, ES_Body, 3);
@@ -180,6 +198,21 @@ public AddToFullPackPost(es_handle, e, ent, host, hostflags, player, pSet[]) {
         } else if(model == g_snark_modelindex[hostOwner]) {
             set_es(es_handle, ES_Sequence, 1);
             set_es(es_handle, ES_FrameRate, 1.0);
+        } else if(hostOwner == g_dmc) {
+            if(model == g_dmc_invisibility_mi) {
+                set_es(es_handle, ES_RenderFx, 19);
+                set_es(es_handle, ES_RenderColor, {128, 128, 128});
+                set_es(es_handle, ES_RenderMode, 1);
+                set_es(es_handle, ES_RenderAmt, 30);
+            } else if(model == g_dmc_super_damage_mi) {
+                set_es(es_handle, ES_RenderFx, 19);
+                set_es(es_handle, ES_RenderColor, {128, 128, 255});
+                set_es(es_handle, ES_RenderAmt, 100);
+            } else if(model == g_dmc_invulnerability_mi) {
+                set_es(es_handle, ES_RenderFx, 19);
+                set_es(es_handle, ES_RenderColor, {255, 128, 0});
+                set_es(es_handle, ES_RenderAmt, 100);
+            }
         }
     }
     
@@ -195,6 +228,29 @@ new bool:g_equip_delete;
         if(equal(classname, %1[i])) \
             %0 = true
 
+stock fm_give_item2(index, const item[]) {
+	if (!equal(item, "weapon_", 7) && !equal(item, "ammo_", 5) && !equal(item, "item_", 5) && !equal(item, "tf_weapon_", 10))
+		return 0;
+
+	new ent = fm_create_entity(item);
+	if (!pev_valid(ent))
+		return 0;
+
+	new Float:origin[3];
+	pev(index, pev_origin, origin);
+	set_pev(ent, pev_origin, origin);
+	set_pev(ent, pev_spawnflags, pev(ent, pev_spawnflags) | SF_NORESPAWN);
+	dllfunc(DLLFunc_Spawn, ent);
+
+	new save = pev(ent, pev_solid);
+	dllfunc(DLLFunc_Touch, ent, index);
+	if (pev(ent, pev_solid) != save || pev(ent, pev_flags) & FL_KILLME)
+		return ent;
+
+	engfunc(EngFunc_RemoveEntity, ent);
+
+	return -1;
+}
 
 public Equip() {
     new playerOwner = GetEntityOwner(g_equip_player);
@@ -235,11 +291,11 @@ public Equip() {
 
     new ammo[32];
     for(new i = 0; i < 32; i++)
-        ammo[i] = get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i)
+        ammo[i] = get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i);
     new Float:oldHealth;
     pev(g_equip_player, pev_health, oldHealth);
 
-    new item = fm_give_item(g_equip_player, classname);
+    new item = fm_give_item2(g_equip_player, classname);
     g_equip_delete = item > 0;
     
     for(new i = 0; i < 32; i++)
@@ -271,7 +327,7 @@ public DeleteWeaponbox() {
         if(!(pev(g_equip_item, pev_spawnflags) & SF_NORESPAWN)) {
             set_pev(g_equip_item, pev_effects, pev(g_equip_item, pev_effects) | EF_NODRAW);
             set_pev(g_equip_item, pev_solid, SOLID_NOT);
-            set_task(contain(classname, "item_") == 0 ? 3.0 : 2.0, "Respawn", g_equip_item);
+            set_task(contain(classname, "item_") == 0 ? 30.0 : 20.0, "Respawn", g_equip_item);
             return;
         }
     }
@@ -452,12 +508,15 @@ public OnItemMaterialize(entity) {
     pev(entity, pev_classname, classname, 32);
     if(contain(classname, "ammo_") != 0 && contain(classname, "item_") != 0 && contain(classname, "weapon_") != 0)
         return;
-
+    
     LoadWeaponModelIndices();
     PreparePickup(entity, classname);
 }
 
 bool:IsAmmo(const classname[]) {
+    if(equal(classname, "ammo_ARgrenades"))
+        return false;
+
     if(contain(classname, "ammo_") == 0)
         return true;
 
@@ -671,11 +730,11 @@ public SpawnPost(entity) {
 }
 
 public EmitSoundPost(entity, channel, const sample[], Float:volume, attenuation, flags, pitch) {
-    if(channel != CHAN_WEAPON || !g_entity_pickups[entity])
+    if(channel != CHAN_WEAPON)
         return FMRES_IGNORED;
 
     if(equal(sample, "items/suitchargeok1.wav") || equal(sample, "items/itembk2.wav")) {
-        OnItemMaterialize(entity);
+        set_task(0.0, "OnItemMaterialize", entity);
         return FMRES_HANDLED;
     }
     return FMRES_IGNORED;

@@ -49,7 +49,7 @@ can_replace_bot(player_id){
     if(!equal(player_team, bot_team))
         return false;
 
-    if(GetEntityOwner(player_id) == g_dmc && (pev(player_id, pev_flags) & FL_DUCKING))
+    if(GetEntityOwner(player_id) == g_dmc && (pev(bot_id, pev_flags) & FL_DUCKING))
         return false;
 
     return true;
