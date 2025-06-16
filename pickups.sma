@@ -751,10 +751,15 @@ public Respawn(entity) {
     }
     set_pev(entity, pev_effects, (pev(entity, pev_effects) & ~EF_NODRAW) | EF_MUZZLEFLASH);
     set_pev(entity, pev_solid, SOLID_TRIGGER);
+    new Float:origin[3];
+    pev(entity, pev_origin, origin);
+    engfunc(EngFunc_SetOrigin, entity, origin);
+
     OnItemMaterialize(entity);
 }
 
 public logevent_round_start() {
+    //server_print("logevent_round_start");
     new classname[32];
     new numEntities = global_get(glb_maxEntities);
     for (new entity = get_maxplayers() + 1; entity < numEntities; entity++) {
