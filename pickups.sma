@@ -228,7 +228,7 @@ new bool:g_equip_delete;
         if(equal(classname, %1[i])) \
             %0 = true
 
-stock fm_give_item2(index, const item[]) {
+fm_give_item2(index, const item[]) {
 	if (!equal(item, "weapon_", 7) && !equal(item, "ammo_", 5) && !equal(item, "item_", 5) && !equal(item, "tf_weapon_", 10))
 		return 0;
 
@@ -252,6 +252,32 @@ stock fm_give_item2(index, const item[]) {
 	return -1;
 }
 
+bool:give_item2(const classname[]) {
+    new playerOwner = GetEntityOwner(g_equip_player);
+
+    new ammo[32];
+    for(new i = 0; i < 32; i++)
+        ammo[i] = get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i);
+    new Float:oldHealth;
+    pev(g_equip_player, pev_health, oldHealth);
+
+    new item = fm_give_item2(g_equip_player, classname);
+    new bool:delete = item > 0;
+    
+    for(new i = 0; i < 32; i++)
+        if(ammo[i] != get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i))
+            delete = true;
+    new Float:newHealth;
+    pev(g_equip_player, pev_health, newHealth);
+    if(oldHealth != newHealth)
+        delete = true;
+
+    if(playerOwner == g_dmc && item > 0) {
+        fm_remove_entity(item);
+    }
+    return delete;
+}
+
 public Equip() {
     new playerOwner = GetEntityOwner(g_equip_player);
     new classname[32];
@@ -259,6 +285,7 @@ public Equip() {
     if(!classname[0])
         return;
 
+    new times = 1;
     if(playerOwner == g_cstrike) {
         new bool:is_pistol = false;
         CHECK_CATEGORY(is_pistol, g_cstrike_pistols);
@@ -287,27 +314,17 @@ public Equip() {
         //don't pick up elites if he has shield
         if(equal(classname, "weapon_elite") && has_shield)
             return;
+        
+        new origClassname[32];
+        pev(g_equip_item, pev_classname, origClassname, 32);
+        if((is_primary || is_pistol) && !equal(origClassname, "weaponbox"))
+            times = 3;
     }
 
-    new ammo[32];
-    for(new i = 0; i < 32; i++)
-        ammo[i] = get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i);
-    new Float:oldHealth;
-    pev(g_equip_player, pev_health, oldHealth);
-
-    new item = fm_give_item2(g_equip_player, classname);
-    g_equip_delete = item > 0;
-    
-    for(new i = 0; i < 32; i++)
-        if(ammo[i] != get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i))
+    g_equip_delete = false;
+    for(new i = 0; i < times; i++) {
+        if(give_item2(classname))
             g_equip_delete = true;
-    new Float:newHealth;
-    pev(g_equip_player, pev_health, newHealth);
-    if(oldHealth != newHealth)
-        g_equip_delete = true;
-
-    if(playerOwner == g_dmc && item > 0) {
-        fm_remove_entity(item);
     }
 }
 
@@ -638,7 +655,7 @@ PreparePickup(entity, const classname[]) {
     if(wbOwner == g_cstrike) {
         new model[64];
         pev(entity, pev_model, model, 64);
-        if(equal(model, "models/w_backpack.mdl") || equal(model, "cstrike/models/w_backpack.mdl"))
+        if(equal(model, "models/w_backpack.mdl"))
             return;
     }
 

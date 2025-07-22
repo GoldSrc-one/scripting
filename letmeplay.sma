@@ -20,8 +20,8 @@ public plugin_init() {
     g_dmc = GetGameIndex("dmc");
 }
 
-can_replace_bot(player_id){
-    if(!is_user_connected(player_id))
+can_replace_bot(player_id) {
+    if(!is_user_connected(player_id) || is_user_hltv(player_id))
         return false;
 
     if(is_user_alive(player_id))

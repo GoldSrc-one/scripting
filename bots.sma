@@ -109,7 +109,7 @@ public vote_menu(player_id, menuTitle[], action[32]) {
     g_votePlayerId = player_id;
 
     for(new i = 1; i <= get_maxplayers(); i++) {
-        if(!is_user_connected(i) || is_user_bot(i))
+        if(!is_user_connected(i) || is_user_bot(i) || is_user_hltv(i))
             continue;
         
         if(i != player_id) {
@@ -186,7 +186,7 @@ public bots_menu_handler(player_id, menu, item) {
         new playerName[64];
         get_user_name(player_id, playerName, 64);
         new menuTitle[256]
-        format(menuTitle, 256, "%s wants to kill all the bots.", playerName);
+        format(menuTitle, 256, "Kill all the bots? %s has started the vote.", playerName);
         vote_menu(player_id, menuTitle, "kill_all_bots");
     }
     if(item == 1) {
@@ -213,7 +213,7 @@ public bots_menu_handler(player_id, menu, item) {
         new playerName[64];
         get_user_name(player_id, playerName, 64);
         new menuTitle[256]
-        format(menuTitle, 256, "%s wants to %s ^"crowbars vs knives^".", playerName, get_pcvar_num(g_bots_melee) ? "disable" : "enable");
+        format(menuTitle, 256, "%s ^"crowbars vs knives^"? %s has started the vote.", get_pcvar_num(g_bots_melee) ? "Disable" : "Enable", playerName);
         vote_menu(player_id, menuTitle, "toggle_melee");
     }
     return PLUGIN_HANDLED;
@@ -247,7 +247,7 @@ public bot_count_handler(player_id, menu, item) {
         new playerName[64];
         get_user_name(player_id, playerName, 64);
         new menuTitle[256]
-        format(menuTitle, 256, "%s wants to change the max bot count to %d (now %d).", playerName, newCount, get_pcvar_num(g_bots_max));
+        format(menuTitle, 256, "Set the max bot count to %d (now %d)? %s has started the vote.", newCount, get_pcvar_num(g_bots_max), playerName);
         g_voteValue = newCount;
         vote_menu(player_id, menuTitle, "change_bots_max");
 
@@ -261,7 +261,7 @@ public bot_difficulty_handler(player_id, menu, item) {
         new playerName[64];
         get_user_name(player_id, playerName, 64);
         new menuTitle[256]
-        format(menuTitle, 256, "%s wants to change the bot difficulty to %s (now %s).", playerName, g_difficulties[item], g_difficulties[get_pcvar_num(g_bot_difficulty)]);
+        format(menuTitle, 256, "Set the bot difficulty to %s (now %s)? %s has started the vote.", g_difficulties[item], g_difficulties[get_pcvar_num(g_bot_difficulty)], playerName);
         g_voteValue = item;
         vote_menu(player_id, menuTitle, "change_bot_difficulty");
 
@@ -358,7 +358,7 @@ public bots_think() {
     new total_bots;
     new game_counts[MAX_GAMES];
     for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-        if(!is_user_connected(player_id))
+        if(!is_user_connected(player_id) || is_user_hltv(player_id))
             continue;
 
         if(is_user_bot(player_id)) {

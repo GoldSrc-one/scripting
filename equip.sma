@@ -8,6 +8,7 @@ new g_valve;
 new g_gearbox;
 new g_dmc;
 new g_cstrike;
+new g_tfc;
 
 #include "equip_gen"
 
@@ -53,6 +54,7 @@ public plugin_init() {
     g_gearbox = GetGameIndex("gearbox");
     g_dmc = GetGameIndex("dmc");
     g_cstrike = GetGameIndex("cstrike");
+    g_tfc = GetGameIndex("tfc");
 
     if(g_gearbox != -1) {
         register_forward(FM_PlayerPostThink, "PlayerPostThinkPre", 0);
@@ -120,7 +122,7 @@ public PrePlayerSpawn(player_id) {
         return;
 
     new game = GetEntityOwner(player_id);
-    if(game != g_dmc)
+    if(game != g_dmc && game != g_tfc)
         GameContext(game, "add_equip_prevention");
 }
 
@@ -427,7 +429,7 @@ public PostPlayerSpawn(player_id) {
     g_player_id = player_id;
 
     new game = GetEntityOwner(player_id);
-    if(game != g_dmc)
+    if(game != g_dmc && game != g_tfc)
         GameContext(game, "remove_equip_prevention");
 
     if(game == g_valve)
@@ -496,6 +498,10 @@ public ActivateDmcPowerup() {
     new powerup = fm_create_entity(get_game_category_item(g_dmc, e_dmc_powerups, g_dmc_powerup[g_player_id]));
     if(!powerup)
         return FMRES_HANDLED;
+
+    new Float:origin[3];
+    pev(g_player_id, pev_origin, origin);
+    set_pev(powerup, pev_origin, origin);
 
     fm_DispatchSpawn(powerup);
 
