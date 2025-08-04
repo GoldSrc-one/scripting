@@ -4,6 +4,8 @@
 
 #include "crossplay"
 
+new g_oldAllowMonsters = 0;
+
 new g_valve;
 new g_gearbox;
 
@@ -13,6 +15,8 @@ new g_monsters[maxMonsters];
 
 public plugin_init() {
     register_plugin("fy_pool_nightmare", "0.0", "GoldSrc.one");
+
+    g_oldAllowMonsters = get_cvar_num("mp_allowmonsters");
 
     new mapName[16];
     get_mapname(mapName, 16);
@@ -32,6 +36,10 @@ public plugin_init() {
     GameContext(g_gearbox != -1 ? g_gearbox : g_valve, "PrecacheMonsters");
 
     set_task(1.0, "OutOfBoundsCheck", _, _, _, "b");
+}
+
+public plugin_end() {
+    set_cvar_num("mp_allowmonsters", g_oldAllowMonsters);
 }
 
 public plugin_precache() {
