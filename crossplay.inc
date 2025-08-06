@@ -35,6 +35,10 @@ stock GetGameIndex(const game[]) {
         if(equal(game, gameName))
             return iGame;
     }
+
+    if(equal(game, "cstrike")) return GetGameIndex("czero");
+    if(equal(game, "czero")) return GetGameIndex("cstrike");
+    
     return -1;
 }
 
