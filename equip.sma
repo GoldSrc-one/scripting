@@ -28,7 +28,7 @@ new bool:g_active = true;
 new bool:g_pistol_only = false;
 
 public plugin_init() {
-    register_plugin("Equip", "0.0", "GoldSrc.one");
+    register_plugin("Equip", "07082025", "GoldSrc.one");
 
     if(GetEntityOwner(0) != GetGameIndex("cstrike")) {
         g_active = false;
@@ -65,6 +65,7 @@ public plugin_init() {
 
         GameContext(g_gearbox, "precache_gearbox_ctf_items");
     }
+
     if(g_dmc != -1) {
         register_forward(FM_CmdStart, "CmdStartPre", 0)
         GameContext(g_dmc, "precache_dmc_items");
@@ -105,9 +106,13 @@ give_item_times(player_id, const item[], times, bool:remove = false) {
     }
 }
 
+new g_player_id = -1;
 new g_player_equip = -1;
 
 public add_equip_prevention() {
+    if(is_user_alive(g_player_id))
+        fm_strip_user_weapons(g_player_id);
+
     if(g_player_equip != -1)
         fm_remove_entity(g_player_equip);
 
@@ -122,8 +127,10 @@ public PrePlayerSpawn(player_id) {
         return;
 
     new game = GetEntityOwner(player_id);
-    if(game != g_dmc && game != g_tfc)
+    if(game != g_dmc && game != g_tfc) {
+        g_player_id = player_id;
         GameContext(game, "add_equip_prevention");
+    }
 }
 
 public remove_equip_prevention() {
@@ -132,8 +139,6 @@ public remove_equip_prevention() {
 
     g_player_equip = -1;
 }
-
-new g_player_id;
 
 get_wish_index(category) {
     return g_should_grant_wish[g_player_id] ? g_wish[g_player_id][category] : -1;
@@ -169,8 +174,6 @@ wish_granted(player_id) {
 }
 
 public equip_valve() {
-    fm_strip_user_weapons(g_player_id);
-
     if((g_round % 2) == 0) 
         give_item_times(g_player_id, "item_battery", 7);
 
@@ -331,7 +334,6 @@ public SetPhysicsKeyValuePost(entity, const key[], const value[]) {
 
 public equip_gearbox() {
     remove_gearbox_ctf_item();
-    fm_strip_user_weapons(g_player_id);
     equip_gearbox_ctf_item();
 
     if(!g_pistol_only) {
