@@ -110,19 +110,21 @@ public writestatus() {
 	if(!f)
 		return PLUGIN_CONTINUE;
 
+	new game[64];
+	GetGameName(GetEntityOwner(0), game, 64);
+
 	new map[64];
 	get_mapname(map, 64);
 
 	new Float:gametime = get_gametime();
 	new timeleft = get_timeleft();
 
-	fprintf(f, "%s^t%.0f^t%d^n", map, gametime, timeleft);
+	fprintf(f, "%s^t%s^t%.0f^t%d^n", game, map, gametime, timeleft);
 
 	for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
 		if(!is_user_connected(player_id))
 			continue;
 
-		new game[64];
 		if(is_user_bot(player_id)) {
             GetGameName(GetEntityOwner(player_id), game, 64);
 		} else {
@@ -132,10 +134,13 @@ public writestatus() {
 		new ip[24];
 		get_user_ip(player_id, ip, 24, 1);
 
+		new id[24];
+		get_user_authid(player_id, id, 24);
+
 		new name[64];
 		get_user_name(player_id, name, 63);
 
-		fprintf(f, "%s^t%s^t%s^n", game, ip, name);
+		fprintf(f, "%s^t%s^t%s^t%s^n", game, ip, id, name);
 	}
 
 	fclose(f);
