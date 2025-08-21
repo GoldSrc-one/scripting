@@ -62,6 +62,11 @@ public plugin_init() {
         register_forward(FM_SetPhysicsKeyValue, "SetPhysicsKeyValuePost", 1);
         register_forward(FM_FindEntityByString, "FindEntityByStringPre", 0);
         register_forward(FM_EmitSound, "EmitSoundPre", 0);
+        register_logevent("remove_gearbox_ctf_item", 3, "2=drop_Damage_Powerup");
+        register_logevent("remove_gearbox_ctf_item", 3, "2=drop_Ammo_Powerup");
+        register_logevent("remove_gearbox_ctf_item", 3, "2=drop_Jump_Powerup");
+        register_logevent("remove_gearbox_ctf_item", 3, "2=drop_Shield_Powerup");
+        register_logevent("remove_gearbox_ctf_item", 3, "2=drop_Health_Powerup");
 
         GameContext(g_gearbox, "precache_gearbox_ctf_items");
     }
@@ -278,7 +283,6 @@ public PlayerPostThinkPost(player_id) {
 }
 
 public remove_gearbox_ctf_item() {
-    new newItems[33];
     for(new i = 1; i <= 32; i++) {
         new item = g_gearbox_ctf_items[i];
         if(!item)
@@ -293,14 +297,9 @@ public remove_gearbox_ctf_item() {
         if(!itemOwner) {
             server_print("Deleted gearbox ctf item %d (%s) (player: %d)", item, itemName, i);
             fm_remove_entity(item);
-        } else {
-            server_print("Reassigned gearbox ctf item %d (%s) (old: %d; new: %d)", item, itemName, i, itemOwner);
-            newItems[itemOwner] = item;
+            g_gearbox_ctf_items[i] = 0;
         }
     }
-
-    for(new i = 1; i <= 32; i++)
-        g_gearbox_ctf_items[i] = newItems[i];
 }
 
 public equip_gearbox_ctf_item() {
@@ -333,7 +332,6 @@ public SetPhysicsKeyValuePost(entity, const key[], const value[]) {
 }
 
 public equip_gearbox() {
-    remove_gearbox_ctf_item();
     equip_gearbox_ctf_item();
 
     if(!g_pistol_only) {
