@@ -129,7 +129,9 @@ GetModelIndexFromClassname(const classname[]) {
 
     fm_remove_entity(entity);
 
-    return GetGameModelIndex(g_game, model);
+    new body, sequence;
+    new index = GetGameModelIndex(g_game, model, body, sequence);
+    return index | (body << 16 ) | (sequence << 24);
 }
 
 public LoadGameWeaponModelIndices() {
@@ -183,32 +185,35 @@ public AddToFullPackPost(es_handle, e, ent, host, hostflags, player, pSet[]) {
         return FMRES_HANDLED;
 
     new hostOwner = GetEntityOwner(host);
-    new model = g_pickup_modelindex[hostOwner][ent];
+    new complex = g_pickup_modelindex[hostOwner][ent];
+    new model = complex & 0xFFFF;
+    new body = (complex >> 16) & 0xFF;
+    new sequence = (complex >> 24) & 0xFF;
     set_es(es_handle, ES_ModelIndex, model);
-    set_es(es_handle, ES_Body, 0);
-    set_es(es_handle, ES_Sequence, 0);
+    set_es(es_handle, ES_Body, body);
+    set_es(es_handle, ES_Sequence, sequence);
     set_es(es_handle, ES_AnimTime, 0.0);
     set_es(es_handle, ES_FrameRate, 0.0);
     set_es(es_handle, ES_RenderMode, 0);
     set_es(es_handle, ES_RenderFx, 0);
-    if(model) {
-        if(model == g_tripmine_modelindex[hostOwner]) {
-            set_es(es_handle, ES_Body, 3);
-            set_es(es_handle, ES_Sequence, 8);
-        } else if(model == g_snark_modelindex[hostOwner]) {
-            set_es(es_handle, ES_Sequence, 1);
+    if(complex) {
+        if(complex == g_tripmine_modelindex[hostOwner]) {
+            set_es(es_handle, ES_Body, body + 3);
+            set_es(es_handle, ES_Sequence, sequence + 8);
+        } else if(complex == g_snark_modelindex[hostOwner]) {
+            set_es(es_handle, ES_Sequence, sequence + 1);
             set_es(es_handle, ES_FrameRate, 1.0);
         } else if(hostOwner == g_dmc) {
-            if(model == g_dmc_invisibility_mi) {
+            if(complex == g_dmc_invisibility_mi) {
                 set_es(es_handle, ES_RenderFx, 19);
                 set_es(es_handle, ES_RenderColor, {128, 128, 128});
                 set_es(es_handle, ES_RenderMode, 1);
                 set_es(es_handle, ES_RenderAmt, 30);
-            } else if(model == g_dmc_super_damage_mi) {
+            } else if(complex == g_dmc_super_damage_mi) {
                 set_es(es_handle, ES_RenderFx, 19);
                 set_es(es_handle, ES_RenderColor, {128, 128, 255});
                 set_es(es_handle, ES_RenderAmt, 100);
-            } else if(model == g_dmc_invulnerability_mi) {
+            } else if(complex == g_dmc_invulnerability_mi) {
                 set_es(es_handle, ES_RenderFx, 19);
                 set_es(es_handle, ES_RenderColor, {255, 128, 0});
                 set_es(es_handle, ES_RenderAmt, 100);
