@@ -62,11 +62,11 @@ public plugin_init() {
         register_forward(FM_SetPhysicsKeyValue, "SetPhysicsKeyValuePost", 1);
         register_forward(FM_FindEntityByString, "FindEntityByStringPre", 0);
         register_forward(FM_EmitSound, "EmitSoundPre", 0);
-        register_logevent("remove_gearbox_ctf_item", 3, "2=drop_Damage_Powerup");
-        register_logevent("remove_gearbox_ctf_item", 3, "2=drop_Ammo_Powerup");
-        register_logevent("remove_gearbox_ctf_item", 3, "2=drop_Jump_Powerup");
-        register_logevent("remove_gearbox_ctf_item", 3, "2=drop_Shield_Powerup");
-        register_logevent("remove_gearbox_ctf_item", 3, "2=drop_Health_Powerup");
+        register_logevent("remove_gearbox_ctf_items", 3, "2=drop_Damage_Powerup");
+        register_logevent("remove_gearbox_ctf_items", 3, "2=drop_Ammo_Powerup");
+        register_logevent("remove_gearbox_ctf_items", 3, "2=drop_Jump_Powerup");
+        register_logevent("remove_gearbox_ctf_items", 3, "2=drop_Shield_Powerup");
+        register_logevent("remove_gearbox_ctf_items", 3, "2=drop_Health_Powerup");
 
         GameContext(g_gearbox, "precache_gearbox_ctf_items");
     }
@@ -272,39 +272,40 @@ public PlayerPostThinkPost(player_id) {
     if(!g_equip_gearbox[player_id])
         return FMRES_HANDLED;
 
-    set_pev(player_id, pev_impulse, 0);
-    
-    g_player_id = player_id;
-    GameContext(g_gearbox, "equip_gearbox");
+    if(pev(player_id, pev_impulse) == 205)
+        set_pev(player_id, pev_impulse, 0);
 
-    g_equip_gearbox[g_player_id] = 0;
+    g_player_id = player_id;
+    GameContext(g_gearbox, "equip_gearbox_ctf_item");
 
     return FMRES_HANDLED;
 }
 
-public remove_gearbox_ctf_item() {
-    for(new i = 1; i <= 32; i++) {
-        new item = g_gearbox_ctf_items[i];
-        if(!item)
-            continue;
+public remove_gearbox_ctf_item(player_id){
+    new item = g_gearbox_ctf_items[player_id];
+    if(!item)
+        return;
+    
+    new itemName[64];
+    pev(item, pev_classname, itemName, 64);
+    
+    new itemOwner = pev(item, pev_owner);
+    if(itemOwner)
+        return;
 
-        dllfunc(DLLFunc_Think, item);
-        
-        new itemName[64];
-        pev(item, pev_classname, itemName, 64);
-        
-        new itemOwner = pev(item, pev_owner);
-        if(!itemOwner) {
-            server_print("Deleted gearbox ctf item %d (%s) (player: %d)", item, itemName, i);
-            fm_remove_entity(item);
-            g_gearbox_ctf_items[i] = 0;
-        }
-    }
+    server_print("Deleted gearbox ctf item %d (%s) (player: %d)", item, itemName, player_id);
+    fm_remove_entity(item);
+    g_gearbox_ctf_items[player_id] = 0;
+}
+
+public remove_gearbox_ctf_items() {
+    for(new i = 1; i <= 32; i++)
+        remove_gearbox_ctf_item(i);
 }
 
 public equip_gearbox_ctf_item() {
     if(g_gearbox_ctf_items[g_player_id]) {
-        server_print("Player %d still has a gearbox ctf item %d! WHAT?", g_player_id, g_gearbox_ctf_items[g_player_id]);
+        remove_gearbox_ctf_item(g_player_id);
         return;
     }
     
@@ -324,6 +325,8 @@ public equip_gearbox_ctf_item() {
         server_print("Equiped player %d with gearbox ctf item %d", g_player_id, item);
         g_gearbox_ctf_items[g_player_id] = item;
     }
+
+    g_equip_gearbox[g_player_id] = 0;
 }
 
 public SetPhysicsKeyValuePost(entity, const key[], const value[]) {
@@ -332,8 +335,6 @@ public SetPhysicsKeyValuePost(entity, const key[], const value[]) {
 }
 
 public equip_gearbox() {
-    equip_gearbox_ctf_item();
-
     if(!g_pistol_only) {
         give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_primaries), 5);
         give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_specials), 5);
@@ -441,8 +442,10 @@ public PostPlayerSpawn(player_id) {
     if(game == g_cstrike)
         GameContext(game, "equip_cstrike");
 
-    if(game == g_gearbox)
+    if(game == g_gearbox){
+        GameContext(game, "equip_gearbox");
         g_equip_gearbox[player_id] = g_round;
+    }
     
     if(game != g_dmc) {
         if((g_round % 6) == 0) 
