@@ -28,7 +28,7 @@ new bool:g_active = true;
 new bool:g_pistol_only = false;
 
 public plugin_init() {
-    register_plugin("Equip", "07082025", "GoldSrc.one");
+    register_plugin("Equip", "22092025", "GoldSrc.one");
 
     if(GetEntityOwner(0) != GetGameIndex("cstrike")) {
         g_active = false;
@@ -393,6 +393,9 @@ public EmitSoundPre(entity, channel, sample[], Float:volume, Float:attenuation, 
 new g_dmc_powerup[33];
 public equip_dmc() {
     g_dmc_powerup[g_player_id] = -1;
+
+    for(new iAmmo = 388; iAmmo <= 391; iAmmo++)
+        set_pdata_int(g_player_id, iAmmo, 0);
 
     if(!g_pistol_only) {
         give_item_times(g_player_id, "weapon_supershotgun", 1, true);
