@@ -3,8 +3,6 @@
 
 #include "crossplay"
 
-new g_dmc = -1;
-
 public plugin_init() {
     register_plugin("LetMePlay", "0.0", "GoldSrc.one");
     if(GetEntityOwner(0) != GetGameIndex("cstrike"))
@@ -16,8 +14,6 @@ public plugin_init() {
     register_forward(FM_CmdStart, "CmdStartPre", 0)
     
     set_task(0.5, "show_message", _, _, _, "b");
-
-    g_dmc = GetGameIndex("dmc");
 }
 
 can_replace_bot(player_id) {
@@ -41,17 +37,9 @@ can_replace_bot(player_id) {
     if(!is_user_alive(bot_id))
         return false;
 
-    new player_team[16];
-    get_user_team(player_id, player_team, 16);
-
-    new bot_team[16];
-    get_user_team(bot_id, bot_team, 16);
-    if(!equal(player_team, bot_team))
+    if(pev(player_id, pev_team) != pev(bot_id, pev_team))
         return false;
-
-    if(GetEntityOwner(player_id) == g_dmc && (pev(bot_id, pev_flags) & FL_DUCKING))
-        return false;
-
+    
     return true;
 }
 
@@ -67,6 +55,7 @@ public letmeplay(player_id) {
     new bot_id = pev(player_id, pev_iuser2);
     
     set_pev(player_id, pev_iuser1, 0);
+    set_pev(player_id, pev_maxspeed, 0.0);
 
     g_player_id = player_id;
     GameContext(GetEntityOwner(player_id), "spawn_player");

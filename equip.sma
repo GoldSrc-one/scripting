@@ -217,17 +217,14 @@ public equip_cstrike() {
     if((g_round % 3) == 0)
         fm_give_item(g_player_id, "item_longjump");
 
-    new player_team[16];
-    get_user_team(g_player_id, player_team, 16);
-
     new pistolCategory = -1;
     new primaryCategory = -1;
-    if(equal(player_team, "TERRORIST")){
+    if(pev(g_player_id, pev_team) == 2){
         pistolCategory = e_cstrike_t_pistols;
         primaryCategory = e_cstrike_t_primaries;
     }
 
-    if(equal(player_team, "CT")){
+    if(pev(g_player_id, pev_team) == 1){
         fm_give_item(g_player_id, "item_thighpack");
 
         pistolCategory = e_cstrike_ct_pistols;
@@ -602,17 +599,20 @@ public TeamScore() {
     new score = read_data(2);
     new bool:eligible = false;
 
+    new iTeam = 0;
     if(equal(team, "TERRORIST")) {
         if(score > g_terrorist_score) {
             eligible = true;
         }
         g_terrorist_score = score;
+        iTeam = 2;
     }
     if(equal(team, "CT")) {
         if(score > g_ct_score) {
             eligible = true;
         }
         g_ct_score = score;
+        iTeam = 1;
     }
 
     if(eligible) {
@@ -620,9 +620,7 @@ public TeamScore() {
             if(!is_user_connected(player_id) || !is_user_alive(player_id))
                 continue;
 
-            new player_team[16];
-            get_user_team(player_id, player_team, 16);
-            if(!equal(team, player_team))
+            if(pev(player_id, pev_team) != iTeam)
                 continue;
 
             g_should_grant_wish[player_id] = true;

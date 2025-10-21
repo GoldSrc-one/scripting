@@ -16,7 +16,7 @@ public plugin_init() {
     register_forward(FM_FindEntityByString, "FindEntityByStringPre", 0);
 }
 
-new g_displacer = false;
+new bool:g_displacer = false;
 new g_player_id = 0;
 public ThinkPre(entity) {
     new classname[24]
@@ -55,14 +55,10 @@ public TouchPost(touched, other) {
 }
 
 public FindEntityByStringPre(entity, const key[], const value[]) {
-    if(g_displacer && equal(key, "classname") && equal(value, "info_player_deathmatch")) {
-        new player_team[16];
-        get_user_team(g_player_id, player_team, 16);
-        if(equal(player_team, "TERRORIST")) {
-            new newEntity = engfunc(EngFunc_FindEntityByString, entity, "classname", "info_player_start");
-            forward_return(FMV_CELL, newEntity);
-            return FMRES_SUPERCEDE;
-        }
+    if(g_displacer && equal(key, "classname") && equal(value, "info_player_deathmatch") && pev(g_player_id, pev_team) == 2) {
+        new newEntity = engfunc(EngFunc_FindEntityByString, entity, "classname", "info_player_start");
+        forward_return(FMV_CELL, newEntity);
+        return FMRES_SUPERCEDE;
     }
     return FMRES_HANDLED;
 }
