@@ -10,11 +10,15 @@ new g_gearbox_ammo[][32] = {"ammo_9mmbox", "ammo_357", "ammo_buckshot", "ammo_9m
 new g_dmc_weapon[][32] = {"weapon_grenadelauncher", "weapon_lightning", "weapon_nailgun", "weapon_quakegun", "weapon_rocketlauncher", "weapon_supernailgun", "weapon_supershotgun"};
 new g_dmc_ammo[][32] = {"item_rockets", "item_cells", "item_spikes", "item_shells", "item_rockets", "item_spikes", "item_shells"};
 
+new g_tfc_weapon[][32] = {"tf_weapon_shotgun", "tf_weapon_ng", "tf_weapon_sniperrifle", "tf_weapon_autorifle", "tf_weapon_supershotgun", "tf_weapon_rpg", "tf_weapon_gl", "tf_weapon_pl", "tf_weapon_superng", "tf_weapon_ac", "tf_weapon_ic", "tf_weapon_flamethrower", "tf_weapon_tranq", "tf_weapon_railgun"};
+new g_tfc_ammo[][32] = {"item_shells", "item_spikes", "item_shells", "item_shells", "item_shells", "item_rockets", "item_rockets", "item_rockets", "item_spikes", "item_rockets", "item_rockets", "item_cells", "item_shells", "item_nails"};
+
 get_num_ammo(game) {
         if (game == g_valve) return 8;
         if (game == g_cstrike) return 24;
         if (game == g_gearbox) return 13;
         if (game == g_dmc) return 7;
+        if (game == g_tfc) return 14;
         return 0;
 }
 
@@ -23,6 +27,7 @@ get_ammo_weapon(game, ammo) {
         if (game == g_cstrike) return g_cstrike_weapon[ammo];
         if (game == g_gearbox) return g_gearbox_weapon[ammo];
         if (game == g_dmc) return g_dmc_weapon[ammo];
+        if (game == g_tfc) return g_tfc_weapon[ammo];
         new emptyString[32] = "";
         return emptyString;
 }
@@ -32,6 +37,7 @@ get_ammo_classname(game, ammo) {
         if (game == g_cstrike) return g_cstrike_ammo[ammo];
         if (game == g_gearbox) return g_gearbox_ammo[ammo];
         if (game == g_dmc) return g_dmc_ammo[ammo];
+        if (game == g_tfc) return g_tfc_ammo[ammo];
         new emptyString[32] = "";
         return emptyString;
 }

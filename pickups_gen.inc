@@ -62,13 +62,36 @@ enum _:e_dmc_categories {
         e_dmc_energy,
 }
 
-const MAX_CATEGORIES = 7;
+new g_tfc_categories[][32] = {"scout", "sniper", "soldier", "demoman", "medic", "hwguy", "pyro", "spy", "engineer"}
+new g_tfc_scout[][32] = {"tf_weapon_caltropgrenade", "tf_weapon_concussiongrenade", "tf_weapon_shotgun", "tf_weapon_ng"}
+new g_tfc_sniper[][32] = {"tf_weapon_normalgrenade", "tf_weapon_ng", "tf_weapon_sniperrifle", "tf_weapon_autorifle"}
+new g_tfc_soldier[][32] = {"tf_weapon_normalgrenade", "tf_weapon_nailgrenade", "tf_weapon_shotgun", "tf_weapon_supershotgun", "tf_weapon_rpg"}
+new g_tfc_demoman[][32] = {"tf_weapon_normalgrenade", "tf_weapon_mirvgrenade", "detpack", "tf_weapon_shotgun", "tf_weapon_gl", "tf_weapon_pl"}
+new g_tfc_medic[][32] = {"tf_weapon_normalgrenade", "tf_weapon_concussiongrenade", "tf_weapon_shotgun", "tf_weapon_supershotgun", "tf_weapon_superng"}
+new g_tfc_hwguy[][32] = {"tf_weapon_normalgrenade", "tf_weapon_mirvgrenade", "tf_weapon_shotgun", "tf_weapon_supershotgun", "tf_weapon_ac"}
+new g_tfc_pyro[][32] = {"tf_weapon_normalgrenade", "tf_weapon_napalmgrenade", "tf_weapon_shotgun", "tf_weapon_ic", "tf_weapon_flamethrower"}
+new g_tfc_spy[][32] = {"tf_weapon_normalgrenade", "tf_weapon_gasgrenade", "tf_weapon_tranq", "tf_weapon_supershotgun", "tf_weapon_ng"}
+new g_tfc_engineer[][32] = {"tf_weapon_normalgrenade", "tf_weapon_empgrenade", "tf_weapon_railgun", "tf_weapon_supershotgun"}
+enum _:e_tfc_categories {
+        e_tfc_scout,
+        e_tfc_sniper,
+        e_tfc_soldier,
+        e_tfc_demoman,
+        e_tfc_medic,
+        e_tfc_hwguy,
+        e_tfc_pyro,
+        e_tfc_spy,
+        e_tfc_engineer,
+}
+
+const MAX_CATEGORIES = 9;
 
 get_game_categories(game) {
         if (game == g_valve) return e_valve_categories;
         if (game == g_cstrike) return e_cstrike_categories;
         if (game == g_gearbox) return e_gearbox_categories;
         if (game == g_dmc) return e_dmc_categories;
+        if (game == g_tfc) return e_tfc_categories;
         return 0;
 }
 
@@ -77,6 +100,7 @@ get_game_category(game, category) {
         if (game == g_cstrike) return g_cstrike_categories[category];
         if (game == g_gearbox) return g_gearbox_categories[category];
         if (game == g_dmc) return g_dmc_categories[category];
+        if (game == g_tfc) return g_tfc_categories[category];
         new emptyString[32] = "";
         return emptyString;
 }
@@ -106,6 +130,15 @@ get_game_category_items(game, category) {
         if (game == g_dmc && category == e_dmc_smgs) return sizeof g_dmc_smgs;
         if (game == g_dmc && category == e_dmc_launchers) return sizeof g_dmc_launchers;
         if (game == g_dmc && category == e_dmc_energy) return sizeof g_dmc_energy;
+        if (game == g_tfc && category == e_tfc_scout) return sizeof g_tfc_scout;
+        if (game == g_tfc && category == e_tfc_sniper) return sizeof g_tfc_sniper;
+        if (game == g_tfc && category == e_tfc_soldier) return sizeof g_tfc_soldier;
+        if (game == g_tfc && category == e_tfc_demoman) return sizeof g_tfc_demoman;
+        if (game == g_tfc && category == e_tfc_medic) return sizeof g_tfc_medic;
+        if (game == g_tfc && category == e_tfc_hwguy) return sizeof g_tfc_hwguy;
+        if (game == g_tfc && category == e_tfc_pyro) return sizeof g_tfc_pyro;
+        if (game == g_tfc && category == e_tfc_spy) return sizeof g_tfc_spy;
+        if (game == g_tfc && category == e_tfc_engineer) return sizeof g_tfc_engineer;
         return 0;
 }
 
@@ -134,6 +167,15 @@ get_game_category_item(game, category, item) {
         if (game == g_dmc && category == e_dmc_smgs) return g_dmc_smgs[item];
         if (game == g_dmc && category == e_dmc_launchers) return g_dmc_launchers[item];
         if (game == g_dmc && category == e_dmc_energy) return g_dmc_energy[item];
+        if (game == g_tfc && category == e_tfc_scout) return g_tfc_scout[item];
+        if (game == g_tfc && category == e_tfc_sniper) return g_tfc_sniper[item];
+        if (game == g_tfc && category == e_tfc_soldier) return g_tfc_soldier[item];
+        if (game == g_tfc && category == e_tfc_demoman) return g_tfc_demoman[item];
+        if (game == g_tfc && category == e_tfc_medic) return g_tfc_medic[item];
+        if (game == g_tfc && category == e_tfc_hwguy) return g_tfc_hwguy[item];
+        if (game == g_tfc && category == e_tfc_pyro) return g_tfc_pyro[item];
+        if (game == g_tfc && category == e_tfc_spy) return g_tfc_spy[item];
+        if (game == g_tfc && category == e_tfc_engineer) return g_tfc_engineer[item];
         new emptyString[32] = "";
         return emptyString;
 }

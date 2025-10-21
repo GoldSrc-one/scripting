@@ -30,5 +30,16 @@
         "smgs": ["weapon_nailgun", "weapon_supernailgun"],
         "launchers": ["weapon_grenadelauncher", "weapon_rocketlauncher"],
         "energy": ["weapon_lightning"]
+    },
+    "tfc": {
+        "scout": ["tf_weapon_caltropgrenade", "tf_weapon_concussiongrenade", "tf_weapon_shotgun", "tf_weapon_ng"],
+        "sniper": ["tf_weapon_normalgrenade", "tf_weapon_ng", "tf_weapon_sniperrifle", "tf_weapon_autorifle"],
+        "soldier": ["tf_weapon_normalgrenade", "tf_weapon_nailgrenade", "tf_weapon_shotgun", "tf_weapon_supershotgun", "tf_weapon_rpg"],
+        "demoman": ["tf_weapon_normalgrenade", "tf_weapon_mirvgrenade", "detpack", "tf_weapon_shotgun", "tf_weapon_gl", "tf_weapon_pl"],
+        "medic": ["tf_weapon_normalgrenade", "tf_weapon_concussiongrenade", "tf_weapon_shotgun", "tf_weapon_supershotgun", "tf_weapon_superng"],
+        "hwguy": ["tf_weapon_normalgrenade", "tf_weapon_mirvgrenade", "tf_weapon_shotgun", "tf_weapon_supershotgun", "tf_weapon_ac"],
+        "pyro": ["tf_weapon_normalgrenade", "tf_weapon_napalmgrenade", "tf_weapon_shotgun", "tf_weapon_ic", "tf_weapon_flamethrower"],
+        "spy": ["tf_weapon_normalgrenade", "tf_weapon_gasgrenade", "tf_weapon_tranq", "tf_weapon_supershotgun", "tf_weapon_ng"],
+        "engineer": ["tf_weapon_normalgrenade", "tf_weapon_empgrenade", "tf_weapon_railgun", "tf_weapon_supershotgun"]
     }
 }

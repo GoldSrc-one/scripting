@@ -58,6 +58,22 @@
         "weapon_rocketlauncher": "item_rockets",
         "weapon_supernailgun": "item_spikes",
         "weapon_supershotgun": "item_shells"
+    },
+    "tfc": {
+        "tf_weapon_shotgun": "item_shells",
+        "tf_weapon_ng": "item_spikes",
+        "tf_weapon_sniperrifle": "item_shells",
+        "tf_weapon_autorifle": "item_shells",
+        "tf_weapon_supershotgun": "item_shells",
+        "tf_weapon_rpg": "item_rockets",
+        "tf_weapon_gl": "item_rockets",
+        "tf_weapon_pl": "item_rockets",
+        "tf_weapon_superng": "item_spikes",
+        "tf_weapon_ac": "item_rockets",
+        "tf_weapon_ic": "item_rockets",
+        "tf_weapon_flamethrower": "item_cells",
+        "tf_weapon_tranq": "item_shells",
+        "tf_weapon_railgun": "item_nails"
     }
 }
 

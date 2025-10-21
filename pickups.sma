@@ -8,6 +8,7 @@ new g_valve;
 new g_gearbox;
 new g_dmc;
 new g_cstrike;
+new g_tfc;
 
 #include "pickups_gen"
 #include "pickups_ammo_gen"
@@ -38,6 +39,10 @@ new g_cstrike_armoury_classname[][32] = {
     "weapon_mp5navy", "weapon_tmp", "weapon_p90", "weapon_mac10", "weapon_ak47", "weapon_sg552", "weapon_m4a1", "weapon_aug", "weapon_scout", "weapon_g3sg1", "weapon_awp", "weapon_m3", "weapon_xm1014", "weapon_m249", "weapon_flashbang", "weapon_hegrenade", "item_kevlar", "item_assaultsuit", "weapon_smokegrenade",
     "weapon_shield", "weapon_famas", "weapon_sg550", "weapon_galil", "weapon_ump45", "weapon_glock18", "weapon_usp", "weapon_elite", "weapon_fiveseven", "weapon_p228", "weapon_deagle"
 };
+
+const maxTfcClasses = 9;
+new g_tfc_modelindex[maxTfcClasses][maxEntities];
+new g_tfc_classname[maxTfcClasses][maxEntities][32];
 
 new g_ammo_offsets[MAX_GAMES];
 
@@ -70,6 +75,8 @@ public plugin_init() {
     if(g_cstrike != -1)
         g_ammo_offsets[g_cstrike] = 376;
 
+    g_tfc = GetGameIndex("tfc");
+
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         g_game = iGame;
         GameContext(iGame, "PrecacheItems");
@@ -89,6 +96,30 @@ PrecacheItem(const classname[]) {
     
     fm_DispatchSpawn(item);
     fm_remove_entity(item);
+}
+
+GetTfcModel(const classname[]) {
+    new model[64];
+
+    if(equal(classname, "tf_weapon_shotgun")) copy(model, 64, "models/p_smallshotgun.mdl");
+    if(equal(classname, "tf_weapon_ng")) copy(model, 64, "models/p_nailgun.mdl");
+    if(equal(classname, "tf_weapon_sniperrifle")) copy(model, 64, "models/p_sniper.mdl");
+    if(equal(classname, "tf_weapon_autorifle")) copy(model, 64, "models/p_sniper.mdl");
+    if(equal(classname, "tf_weapon_supershotgun")) copy(model, 64, "models/p_shotgun.mdl");
+    if(equal(classname, "tf_weapon_rpg")) copy(model, 64, "models/p_srpg.mdl");
+    if(equal(classname, "tf_weapon_gl")) copy(model, 64, "models/p_glauncher.mdl");
+    if(equal(classname, "tf_weapon_pl")) copy(model, 64, "models/p_glauncher.mdl");
+    if(equal(classname, "tf_weapon_superng")) copy(model, 64, "models/p_snailgun.mdl");
+    if(equal(classname, "tf_weapon_ac")) copy(model, 64, "models/p_mini.mdl");
+    if(equal(classname, "tf_weapon_ic")) copy(model, 64, "models/p_rpg.mdl");
+    if(equal(classname, "tf_weapon_flamethrower")) copy(model, 64, "models/p_egon.mdl");
+    if(equal(classname, "tf_weapon_tranq")) copy(model, 64, "models/p_spygun.mdl");
+    if(equal(classname, "tf_weapon_railgun")) copy(model, 64, "models/p_9mmhandgun.mdl");
+    if(equal(classname, "tf_weapon_caltropgrenade")) copy(model, 64, "models/caltrop.mdl");
+    if(equal(classname, "tf_weapon_gasgrenade")) copy(model, 64, "models/spy_grenade.mdl");
+    if(equal(classname, "item_cells")) copy(model, 64, "models/w_gaussammo.mdl");
+    
+    return model;
 }
 
 public PrecacheItems() {
@@ -118,7 +149,19 @@ public LoadWeaponModelIndices() {
     }
 }
 
+GetComplexModelIndex(const model[]) {
+    new body, sequence;
+    new index = GetGameModelIndex(g_game, model, body, sequence);
+    return index | (body << 16 ) | (sequence << 24);
+}
+
 GetModelIndexFromClassname(const classname[]) {
+    if(g_game == g_tfc){
+        new complexIndex = GetComplexModelIndex(GetTfcModel(classname));
+        if(complexIndex)
+            return complexIndex;
+    }
+
     new entity = fm_create_entity(classname);
     if(!entity)
         return 0;
@@ -129,9 +172,7 @@ GetModelIndexFromClassname(const classname[]) {
 
     fm_remove_entity(entity);
 
-    new body, sequence;
-    new index = GetGameModelIndex(g_game, model, body, sequence);
-    return index | (body << 16 ) | (sequence << 24);
+    return GetComplexModelIndex(model);
 }
 
 public LoadGameWeaponModelIndices() {
@@ -180,12 +221,22 @@ bool:IsPickupNative(ent, host) {
     return false;
 }
 
+GetTfcClass(player){
+    new class = pev(player, pev_playerclass) - 1;
+    if(class < 0)
+        return -1;
+    if(class >= 9)
+        return -1;
+    return class;
+}
+
 public AddToFullPackPost(es_handle, e, ent, host, hostflags, player, pSet[]) {
     if(IsPickupNative(ent, host))
         return FMRES_HANDLED;
 
     new hostOwner = GetEntityOwner(host);
-    new complex = g_pickup_modelindex[hostOwner][ent];
+    new tfcClass = hostOwner == g_tfc ? GetTfcClass(host) : -1;
+    new complex = tfcClass != -1 ? g_tfc_modelindex[tfcClass][ent] : g_pickup_modelindex[hostOwner][ent];
     new model = complex & 0xFFFF;
     new body = (complex >> 16) & 0xFF;
     new sequence = (complex >> 24) & 0xFF;
@@ -219,6 +270,22 @@ public AddToFullPackPost(es_handle, e, ent, host, hostflags, player, pSet[]) {
                 set_es(es_handle, ES_RenderAmt, 100);
             }
         }
+    }
+    if(tfcClass != -1 && equal(g_tfc_classname[tfcClass][ent], "tf_weapon_", 10) && !equal(g_tfc_classname[tfcClass][ent][strlen(g_tfc_classname[tfcClass][ent]) - 7], "grenade", 7)) {
+        new Float:origin[3];
+        new Float:angles[3];
+        get_es(es_handle, ES_Origin, origin);
+        get_es(es_handle, ES_Angles, angles);
+
+        origin[0] -= 16.0;
+        origin[1] -= 56.0;
+        origin[2] -= 5.0;
+        angles[0] = 0.0;
+        angles[1] = 0.0;
+        angles[2] = -80.0;
+
+        set_es(es_handle, ES_Origin, origin);
+        set_es(es_handle, ES_Angles, angles);
     }
     
     return FMRES_HANDLED;
@@ -261,17 +328,21 @@ bool:give_item2(const classname[]) {
     new playerOwner = GetEntityOwner(g_equip_player);
 
     new ammo[32];
-    for(new i = 0; i < 32; i++)
-        ammo[i] = get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i);
+    if(g_ammo_offsets[playerOwner])
+        for(new i = 0; i < 32; i++)
+            ammo[i] = get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i);
+    
     new Float:oldHealth;
     pev(g_equip_player, pev_health, oldHealth);
 
     new item = fm_give_item2(g_equip_player, classname);
     new bool:delete = item > 0;
     
-    for(new i = 0; i < 32; i++)
-        if(ammo[i] != get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i))
-            delete = true;
+    if(g_ammo_offsets[playerOwner])
+        for(new i = 0; i < 32; i++)
+            if(ammo[i] != get_pdata_int(g_equip_player, g_ammo_offsets[playerOwner] + i))
+                delete = true;
+
     new Float:newHealth;
     pev(g_equip_player, pev_health, newHealth);
     if(oldHealth != newHealth)
@@ -285,10 +356,56 @@ bool:give_item2(const classname[]) {
 
 public Equip() {
     new playerOwner = GetEntityOwner(g_equip_player);
+    new tfcClass = playerOwner == g_tfc ? GetTfcClass(g_equip_player) : -1;
     new classname[32];
-    copy(classname, 32, g_pickup_classname[playerOwner][g_equip_item]);
+    copy(classname, 32, tfcClass != -1 ? g_tfc_classname[tfcClass][g_equip_item] :  g_pickup_classname[playerOwner][g_equip_item]);
     if(!classname[0])
         return;
+
+    if(playerOwner == g_tfc) {
+        if(equal(classname, "weaponbox")) {
+            const Float:factor = 0.2;
+
+            new Float:health; new Float:maxHealth;
+            pev(g_equip_player, pev_health, health);
+            pev(g_equip_player, pev_max_health, maxHealth);
+            if(health < maxHealth) {
+                set_pev(g_equip_player, pev_health, floatmin(maxHealth, health + factor * maxHealth));
+                g_equip_delete = true;
+            }
+
+            new Float:armor; new Float:maxArmor;
+            pev(g_equip_player, pev_armorvalue, armor);
+            maxArmor = get_pdata_float(g_equip_player, 62);
+            if(armor < maxArmor) {
+                set_pev(g_equip_player, pev_armortype, get_pdata_float(g_equip_player, 61));
+                set_pev(g_equip_player, pev_armorvalue, floatmin(maxArmor, armor + factor * maxArmor));
+                g_equip_delete = true;
+            }
+
+            new ammoOffsets[] = {53, 55, 57, 59};
+            new maxAmmoOffsets[sizeof ammoOffsets] = {50, 54, 56, 58};
+            for(new iAmmo = 0; iAmmo < sizeof ammoOffsets; iAmmo++) {
+                new ammo = get_pdata_int(g_equip_player, ammoOffsets[iAmmo]);
+                new maxAmmo = get_pdata_int(g_equip_player, maxAmmoOffsets[iAmmo]);
+                if(ammo < maxAmmo) {
+                    set_pdata_int(g_equip_player, ammoOffsets[iAmmo], min(maxAmmo, ammo + floatround(factor * maxAmmo)));
+                    g_equip_delete = true;
+                }
+            }
+            return;
+        }
+        for(new iGrenade = 0; iGrenade < NumTfcGrenades(tfcClass); iGrenade++) {
+            if(!equal(classname, get_game_category_item(g_tfc, tfcClass, iGrenade)))
+                continue;
+            
+            new offsets[3] = {14, 15, 51};
+            new offset = offsets[iGrenade];
+            set_pdata_int(g_equip_player, offset, get_pdata_int(g_equip_player, offset) + 1);
+            g_equip_delete = true;
+            return;
+        }
+    }
 
     new times = 1;
     if(playerOwner == g_cstrike) {
@@ -583,7 +700,26 @@ PrepareAmmoPickup(entity, const classname[]) {
 
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         g_pickup_classname[iGame][entity] = "";
-        g_pickup_modelindex[iGame][entity] = 0;        
+        g_pickup_modelindex[iGame][entity] = 0;
+        
+        if(iGame == g_tfc) {
+            if(nearestWeapon) {
+                for(new iTfcClass = 0; iTfcClass < maxTfcClasses; iTfcClass++) {
+                    g_tfc_classname[iTfcClass][entity] = "";
+                    g_tfc_modelindex[iTfcClass][entity] = 0;
+                    for(new iAmmo = 0; iAmmo < get_num_ammo(iGame); iAmmo++) {
+                        if(!equal(g_tfc_classname[iTfcClass][nearestWeapon], get_ammo_weapon(iGame, iAmmo)))
+                            continue;
+
+                        copy(g_tfc_classname[iTfcClass][entity], 32, get_ammo_classname(iGame, iAmmo));
+                        g_tfc_modelindex[iTfcClass][entity] = g_ammo_modelindices[iGame][iAmmo];
+                        break;
+                    }
+                }
+            }
+            continue;
+        }
+
         new bool:exactMatch = false;
         for(new iAmmo = 0; iAmmo < get_num_ammo(iGame); iAmmo++) {
             if(equal(classname, get_ammo_classname(iGame, iAmmo))) {
@@ -593,6 +729,9 @@ PrepareAmmoPickup(entity, const classname[]) {
                 break;
             }
         }
+        
+        //TODO: random ammo
+
         if(exactMatch || !nearestWeapon)
             continue;
 
@@ -619,6 +758,15 @@ PrepareItemPickup(entity, const classname[]) {
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         g_pickup_classname[iGame][entity] = "";
         g_pickup_modelindex[iGame][entity] = 0;
+
+        if(iGame == g_tfc) {
+            for(new iTfcClass = 0; iTfcClass < maxTfcClasses; iTfcClass++) {
+                g_tfc_classname[iTfcClass][entity] = "weaponbox";
+                g_tfc_modelindex[iTfcClass][entity] = g_item_modelindices[iGame][0];
+            }
+            continue;
+        }
+
         new bool:exactMatch = false;
         new numItems = get_num_items(iGame);
         for(new iItem = 0; iItem < numItems; iItem++) {
@@ -646,6 +794,14 @@ PrepareItemPickup(entity, const classname[]) {
             break;
         }
     }
+}
+
+NumTfcGrenades(iTfcClass) {
+    switch(iTfcClass) {
+        case 1: return 1;
+        case 3: return 3;
+    }
+    return 2;
 }
 
 PreparePickup(entity, const classname[]) {
@@ -681,6 +837,21 @@ PreparePickup(entity, const classname[]) {
     //the rest of this function is "PrepareWeaponPickup"
 
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
+        if(iGame == g_tfc) {
+            new bool:isGrenade = false;
+            new oldCategory, oldItem;
+            if(find_weapon(wbOwner, classname, oldCategory, oldItem) && equal(get_game_category(wbOwner, oldCategory), "grenades"))
+                isGrenade = true;
+
+            for(new iTfcClass = 0; iTfcClass < maxTfcClasses; iTfcClass++) {
+                new numGrenades = NumTfcGrenades(iTfcClass);
+                new tfcWeapon = isGrenade ? random(numGrenades) : (numGrenades + random(get_game_category_items(g_tfc, iTfcClass) - numGrenades));
+                copy(g_tfc_classname[iTfcClass][entity], 32, get_game_category_item(g_tfc, iTfcClass, tfcWeapon));
+                g_tfc_modelindex[iTfcClass][entity] = g_tfc_classname[iTfcClass][entity][0] ? g_modelindices[g_tfc][iTfcClass][tfcWeapon] : 0;
+            }
+            continue;
+        }
+
         get_1to1_mappings(classname, iGame, g_pickup_classname[iGame][entity], 32);
         new newCategory, newItem;
         if(!find_weapon(iGame, g_pickup_classname[iGame][entity], newCategory, newItem)) {
