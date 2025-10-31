@@ -26,7 +26,7 @@ new g_gearbox_categories[][32] = {"melees", "primaries", "specials", "powerups"}
 new g_gearbox_melees[][32] = {"weapon_pipewrench", "weapon_knife", "weapon_grapple"}
 new g_gearbox_primaries[][32] = {"weapon_m249", "weapon_displacer", "weapon_sniperrifle"}
 new g_gearbox_specials[][32] = {"weapon_sporelauncher", "weapon_shockrifle"}
-new g_gearbox_powerups[][32] = {"item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration"}
+new g_gearbox_powerups[][32] = {"item_ctfaccelerator", "item_ctfbackpack", "item_ctflongjump", "item_ctfportablehev", "item_ctfregeneration"}
 enum _:e_gearbox_categories {
         e_gearbox_melees,
         e_gearbox_primaries,
@@ -101,4 +101,3 @@ get_game_category_item(game, category, item) {
         new emptyString[32] = "";
         return emptyString;
 }
-

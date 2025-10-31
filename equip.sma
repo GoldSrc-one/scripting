@@ -12,9 +12,7 @@ new g_tfc;
 
 #include "equip_gen"
 
-new bool:g_should_grant_wish[33];
 new bool:g_wish_granted[33];
-new bool:g_has_wish[33];
 new g_wish[33][MAX_CATEGORIES];
 
 new g_valve_category_names[][32] = { "Pistol", "Primary", "Special", "Grenade" };
@@ -46,8 +44,6 @@ public plugin_init() {
     register_clcmd("say guns", "wish_menu");
     register_clcmd("say /guns", "wish_menu");
     register_clcmd("say !guns", "wish_menu");
-    register_logevent("logevent_round_start", 2, "1=Round_Start");
-    register_event("TeamScore", "TeamScore", "a");
     set_task(120.0, "wish_advertise", _, _, _, "b");
 
     g_valve = GetGameIndex("valve");
@@ -98,11 +94,6 @@ public precache_dmc_items() {
     precache_items(others, sizeof others);
 }
 
-new g_round = 0;
-public logevent_round_start() {
-    g_round++;
-}
-
 give_item_times(player_id, const item[], times, bool:remove = false) {
     for(new i = 0; i < times; i++) {
         new entity = fm_give_item(player_id, item);
@@ -145,12 +136,8 @@ public remove_equip_prevention() {
     g_player_equip = -1;
 }
 
-get_wish_index(category) {
-    return g_should_grant_wish[g_player_id] ? g_wish[g_player_id][category] : -1;
-}
-
 get_wish_or_random_index(game, category) {
-    new index = get_wish_index(category);
+    new index = g_wish[g_player_id][category];
     if(index != -1)
         g_wish_granted[g_player_id] = true;
     if(index == -1)
@@ -165,25 +152,9 @@ get_wish_or_random(game, category) {
     return item;
 }
 
-wish_granted(player_id) {
-    if(!g_should_grant_wish[player_id])
-        return;
-
-    if(g_wish_granted[player_id]) {
-        client_print(player_id, print_chat, "Your wish has been granted!");
-    } else {
-        //no wish granted
-        client_print(player_id, print_chat, "Say /wish to pick guns you would like to get in the next round.");
-    }
-    g_should_grant_wish[player_id] = false;
-}
-
 public equip_valve() {
-    if((g_round % 2) == 0) 
-        give_item_times(g_player_id, "item_battery", 7);
-
-    if((g_round % 3) == 0) 
-        fm_give_item(g_player_id, "item_longjump");
+    give_item_times(g_player_id, "item_battery", 7);
+    fm_give_item(g_player_id, "item_longjump");
 
     give_item_times(g_player_id, get_wish_or_random(g_valve, e_valve_pistols), 3);
 
@@ -194,7 +165,7 @@ public equip_valve() {
 
         fm_give_item(g_player_id, get_wish_or_random(g_valve, e_valve_specials));
 
-        new grenadeIndex = get_wish_index(e_valve_grenades);
+        new grenadeIndex = g_wish[g_player_id][e_valve_grenades];
         if(grenadeIndex == -1) {
             grenadeIndex = equal(primary, "weapon_9mmAR") ? 0 : (random(get_game_category_items(g_valve, e_valve_grenades) - 1) + 1);
         } else {
@@ -204,18 +175,13 @@ public equip_valve() {
     }
 
     fm_give_item(g_player_id, "weapon_crowbar");
-
-    wish_granted(g_player_id);
 }
 
 public equip_cstrike() {
     fm_strip_user_weapons(g_player_id);
 
-    if((g_round % 2) == 0)
-        fm_give_item(g_player_id, "item_assaultsuit");
-
-    if((g_round % 3) == 0)
-        fm_give_item(g_player_id, "item_longjump");
+    fm_give_item(g_player_id, "item_assaultsuit");
+    fm_give_item(g_player_id, "item_longjump");
 
     new pistolCategory = -1;
     new primaryCategory = -1;
@@ -238,20 +204,14 @@ public equip_cstrike() {
         if(primaryCategory != -1)
             give_item_times(g_player_id, get_wish_or_random(g_cstrike, primaryCategory), 4);
 
-        if(g_should_grant_wish[g_player_id] || random(2))
-            fm_give_item(g_player_id, "weapon_hegrenade");
-        if(g_should_grant_wish[g_player_id] || random(2))
-            fm_give_item(g_player_id, "weapon_flashbang");
-        if(g_should_grant_wish[g_player_id] || random(2))
-            fm_give_item(g_player_id, "weapon_flashbang");
+        fm_give_item(g_player_id, "weapon_hegrenade");
+        give_item_times(g_player_id, "weapon_flashbang", 2);
     }
 
     fm_give_item(g_player_id, "weapon_knife");
-
-    wish_granted(g_player_id);
 }
 
-new g_equip_gearbox[33];
+new bool:g_equip_gearbox[33];
 new g_gearbox_ctf_items[33];
 
 public PlayerPostThinkPre(player_id) {
@@ -307,14 +267,7 @@ public equip_gearbox_ctf_item() {
     }
     
     new item = 0;
-    if((g_equip_gearbox[g_player_id] % 6) == 0) {
-        fm_give_item(g_player_id, "item_longjump");
-        item = fm_give_item(g_player_id, "item_ctfportablehev");
-    } else if((g_equip_gearbox[g_player_id] % 3) == 0) {
-        item = fm_give_item(g_player_id, "item_ctflongjump");
-    } else if((g_equip_gearbox[g_player_id] % 2) == 0) {
-        item = fm_give_item(g_player_id, "item_ctfportablehev");
-    } else if(!g_pistol_only) {
+    if(!g_pistol_only) {
         item = fm_give_item(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_powerups));
     }
     
@@ -323,7 +276,7 @@ public equip_gearbox_ctf_item() {
         g_gearbox_ctf_items[g_player_id] = item;
     }
 
-    g_equip_gearbox[g_player_id] = 0;
+    g_equip_gearbox[g_player_id] = false;
 }
 
 public SetPhysicsKeyValuePost(entity, const key[], const value[]) {
@@ -335,16 +288,15 @@ public equip_gearbox() {
     if(!g_pistol_only) {
         give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_primaries), 5);
         give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_specials), 5);
-
-        if(g_should_grant_wish[g_player_id] || random(2))
-            fm_give_item(g_player_id, "weapon_penguin");
+        fm_give_item(g_player_id, "weapon_penguin");
     }
 
     give_item_times(g_player_id, "weapon_eagle", 7);
 
     fm_give_item(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_melees));
 
-    wish_granted(g_player_id);
+    give_item_times(g_player_id, "item_battery", 7);
+
     return FMRES_HANDLED;
 }
 
@@ -410,11 +362,8 @@ public equip_dmc() {
     give_item_times(g_player_id, "item_spikes", 7, true);
     give_item_times(g_player_id, "item_cells", 1, true);
 
-    if((g_round % 2) == 0) {
-        give_item_times(g_player_id, "item_armor1", 1, true);
-    }
+    give_item_times(g_player_id, "item_armor1", 1, true);
 
-    wish_granted(g_player_id);
     return FMRES_HANDLED;
 }
 
@@ -444,24 +393,11 @@ public PostPlayerSpawn(player_id) {
 
     if(game == g_gearbox){
         GameContext(game, "equip_gearbox");
-        g_equip_gearbox[player_id] = g_round;
+        g_equip_gearbox[player_id] = true;
     }
     
-    if(game != g_dmc) {
-        if((g_round % 6) == 0) 
-            client_print(player_id, print_chat, "ARMORED + LONG JUMP ROUND!");
-        else if((g_round % 2) == 0) 
-            client_print(player_id, print_chat, "ARMORED ROUND");
-        else if((g_round % 3) == 0) 
-            client_print(player_id, print_chat, "LONG JUMP ROUND");
-        else
-            client_print(player_id, print_chat, "unarmored round");
-    } else {
-        if((g_round % 2) == 0) 
-            client_print(player_id, print_chat, "ARMORED ROUND");
-        else
-            client_print(player_id, print_chat, "unarmored round");
-    }
+    if(!g_wish_granted[player_id] && game != g_tfc)
+        client_print(player_id, print_chat, "Say /wish to pick guns you would like to get in the next round.");
 }
 
 new bool:g_use_down[33];
@@ -572,6 +508,7 @@ public wish_menu_handler(player_id, menu, item) {
         copy(gameItem, 64, get_game_category_item(game, category, iGameItem));
         menu_additem(menu, gameItem);
     }
+    menu_additem(menu, "(random)");
 
     g_wish_submenu[player_id] = category;
     menu_display(player_id, menu);
@@ -584,52 +521,16 @@ public wish_submenu_handler(player_id, menu, item) {
 
     if(item >= 0) {
         new category = g_wish_submenu[player_id];
-        g_wish[player_id][category] = item;
-        g_has_wish[player_id] = true;
+        if(item >= get_game_category_items(GetEntityOwner(player_id), category))
+            item = -1;
+        g_wish[player_id][category] = item;        
     }
 
     return wish_menu(player_id);
 }
 
-new g_terrorist_score;
-new g_ct_score;
-public TeamScore() {
-    new team[16];
-    read_data(1, team, 16);
-    new score = read_data(2);
-    new bool:eligible = false;
-
-    new iTeam = 0;
-    if(equal(team, "TERRORIST")) {
-        if(score > g_terrorist_score) {
-            eligible = true;
-        }
-        g_terrorist_score = score;
-        iTeam = 2;
-    }
-    if(equal(team, "CT")) {
-        if(score > g_ct_score) {
-            eligible = true;
-        }
-        g_ct_score = score;
-        iTeam = 1;
-    }
-
-    if(eligible) {
-        for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-            if(!is_user_connected(player_id) || !is_user_alive(player_id))
-                continue;
-
-            if(pev(player_id, pev_team) != iTeam)
-                continue;
-
-            g_should_grant_wish[player_id] = true;
-        }
-    }
-}
-
 public client_connect(player_id) {
-    g_has_wish[player_id] = false;
+    g_wish_granted[player_id] = false;
     for(new iCategory = 0; iCategory < MAX_CATEGORIES; iCategory++) {
         g_wish[player_id][iCategory] = -1;
     }
@@ -638,7 +539,7 @@ public client_connect(player_id) {
 
 public wish_advertise() {
     for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-        if(!is_user_connected(player_id) || is_user_alive(player_id) || g_has_wish[player_id])
+        if(!is_user_connected(player_id) || is_user_alive(player_id) || g_wish_granted[player_id])
             continue;
 
         client_print(player_id, print_chat, "Say /wish to pick guns you would like to get in the next round.");

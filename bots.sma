@@ -4,14 +4,16 @@
 #include "crossplay"
 
 new g_bots_max;
-new g_bots_melee;
+//new g_bots_melee;
 new g_bot_difficulty;
 new g_valve = -1;
 new g_gearbox = -1;
 new g_dmc = -1;
 new g_cstrike = -1;
+new g_tfc = -1;
 new g_difficulties[][] = {"Easy", "Normal", "Hard", "Expert"}
-new Float:g_factors[MAX_GAMES];
+new Float:g_ratios[MAX_GAMES];
+new g_teams[MAX_GAMES];
 
 const g_bots_think_task = 1;
 const g_vote_menu_task = 100;
@@ -23,9 +25,10 @@ public plugin_init() {
     register_clcmd("say bots", "bots_menu");
     register_clcmd("say /bots", "bots_menu");
     register_clcmd("say !bots", "bots_menu");
+    register_clcmd("bots_ratio", "bots_ratio") 
     register_forward(FM_CreateFakeClient, "CreateFakeClientPre", 0);
     g_bots_max = register_cvar("bots_max", "8");
-    g_bots_melee = register_cvar("bots_melee", "0");
+    //g_bots_melee = register_cvar("bots_melee", "0");
     g_bot_difficulty = get_cvar_pointer("bot_difficulty");    
     
     set_task(1.0, "bots_think", g_bots_think_task, _, _, "b");
@@ -33,15 +36,25 @@ public plugin_init() {
 
     g_valve = GetGameIndex("valve");
     if(g_valve != -1)
-        g_factors[g_valve] = 0.35 + random_float(-0.01, 0.01);
+        g_ratios[g_valve] = random_float(20.0, 30.0);
 
     g_cstrike = GetGameIndex("cstrike");
     if(g_cstrike != -1)
-        g_factors[g_cstrike] = 0.20 + random_float(-0.01, 0.01);
+        g_ratios[g_cstrike] = random_float(35.0, 45.0);
 
     g_gearbox = GetGameIndex("gearbox");
     if(g_gearbox != -1)
-        g_factors[g_gearbox] = 0.45 + random_float(-0.01, 0.01);
+        g_ratios[g_gearbox] = random_float(20.0, 30.0);
+
+    g_tfc = GetGameIndex("tfc");
+    if(g_tfc != -1)
+        g_ratios[g_tfc] = random_float(30.0, 40.0);
+
+    new Float:ratioSum = 0.0;
+    for(new iGame = 0; iGame < MAX_GAMES; iGame++)
+        ratioSum += (g_ratios[iGame]) / 100.0;
+    for(new iGame = 0; iGame < MAX_GAMES; iGame++)
+        g_ratios[iGame] /= ratioSum;
 
     g_dmc = GetGameIndex("dmc");
     if(g_dmc != -1)
@@ -164,6 +177,42 @@ public vote_menu_cancel(task_id) {
     vote_menu_handler(task_id - g_vote_menu_task, g_voteMenu, MENU_EXIT);
 }
 
+bool:getGameAbbr(iGame, gameAbbr[16]) {
+    gameAbbr = "";
+    if(iGame == g_valve) { gameAbbr = "HL"; return true; }
+    if(iGame == g_gearbox) { gameAbbr = "OP4"; return true; }
+    if(iGame == g_cstrike) { gameAbbr = "CS"; return true; }
+    if(iGame == g_tfc) { gameAbbr = "TFC"; return true; }
+    return false;
+}
+
+getRatiosString(const Float:ratios[]) {
+    new ratiosString[64];
+    new pos = 0;
+
+    for(new iGame = 0; iGame < MAX_GAMES; iGame++) {
+        new gameAbbr[16];
+        if(getGameAbbr(iGame, gameAbbr))
+            pos += format(ratiosString[pos], 64, "%s:%.f%% ", gameAbbr, ratios[iGame]);
+    }
+
+    return ratiosString;
+}
+
+new g_teamNames[][] = {"ANY", "CT", "T"};
+getTeamsString(const teams[]) {
+    new teamsString[64];
+    new pos = 0;
+
+    for(new iGame = 0; iGame < MAX_GAMES; iGame++) {
+        new gameAbbr[16];
+        if(getGameAbbr(iGame, gameAbbr))
+            pos += format(teamsString[pos], 64, "%s:%s ", gameAbbr, g_teamNames[teams[iGame]]);
+    }
+
+    return teamsString;
+}
+
 public bots_menu(player_id) {
     new menu = menu_create("Bots menu", "bots_menu_handler");
     menu_additem(menu, "Kill all bots");
@@ -173,13 +222,21 @@ public bots_menu(player_id) {
     new changeBotDifficulty[64];
     format(changeBotDifficulty, 64, "Change bot difficulty (now: %s)", g_difficulties[get_pcvar_num(g_bot_difficulty)]);
     menu_additem(menu, changeBotDifficulty);
-    new melee[64];
+    new changeBotRatios[64];
+    format(changeBotRatios, 64, "Change bot ratios (now: %s)", getRatiosString(g_ratios));
+    menu_additem(menu, changeBotRatios);
+    new changeBotTeams[64];
+    format(changeBotTeams, 64, "Change bot teams (now: %s)", getTeamsString(g_teams));
+    menu_additem(menu, changeBotTeams);
+    /*new melee[64];
     format(melee, 64, "Crowbars vs knives (now: %s)", get_pcvar_num(g_bots_melee) ? "On" : "Off");
-    menu_additem(menu, melee);
+    menu_additem(menu, melee);*/
     menu_display(player_id, menu);    
     return PLUGIN_HANDLED;
 }
 
+new Float:g_player_ratios[33][MAX_GAMES];
+new g_player_teams[33][MAX_GAMES];
 public bots_menu_handler(player_id, menu, item) {
     menu_destroy(menu);
     if(item == 0) {
@@ -210,22 +267,26 @@ public bots_menu_handler(player_id, menu, item) {
         menu_display(player_id, menu);
     }
     if(item == 3) {
+        for(new iGame = 0; iGame < MAX_GAMES; iGame++)
+            g_player_ratios[player_id][iGame] = g_ratios[iGame];
+
+        ratios_menu(player_id);
+    }
+    if(item == 4) {
+        for(new iGame = 0; iGame < MAX_GAMES; iGame++)
+            g_player_teams[player_id][iGame] = g_teams[iGame];
+
+        teams_menu(player_id);
+    }
+    /*if(item == 3) {
         new playerName[64];
         get_user_name(player_id, playerName, 64);
         new menuTitle[256]
         format(menuTitle, 256, "%s ^"crowbars vs knives^"? %s has started the vote.", get_pcvar_num(g_bots_melee) ? "Disable" : "Enable", playerName);
         vote_menu(player_id, menuTitle, "toggle_melee");
-    }
+    }*/
     return PLUGIN_HANDLED;
 }
-
-/*new g_bot_id;
-public kill_bot(){
-    new hurt = create_entity("game_player_hurt");
-    entity_set_float(hurt, EV_FL_dmg, 9000.1);
-    force_use(g_bot_id, hurt);
-    remove_entity(hurt);
-}*/
 
 public kill_all_bots() {
     ANNOUNCE(g_votePlayerId, "%s has killed all the bots", 0);
@@ -234,8 +295,6 @@ public kill_all_bots() {
             continue;
 
         user_kill(player_id, 1);
-        /*g_bot_id = player_id;
-        GameContext(GetEntityOwner(player_id), "kill_bot");*/
     }
 }
 
@@ -279,20 +338,139 @@ public change_bot_difficulty() {
     set_pcvar_num(g_bot_difficulty, g_voteValue);
 }
 
-public toggle_melee() {
+ratios_menu(player_id) {
+    new menu = menu_create("Change bot ratios", "bot_ratio_handler");
+    for(new iGame = 0; iGame < MAX_GAMES; iGame++) {
+        new gameAbbr[16];
+        if(getGameAbbr(iGame, gameAbbr)) {
+            new gameRatio[32];
+            format(gameRatio, 32, "%s (%.f %%)", gameAbbr, g_player_ratios[player_id][iGame]);
+            menu_additem(menu, gameRatio);
+        }
+    }
+    menu_additem(menu, "Save");
+    menu_display(player_id, menu);
+}
+
+new g_ratio_game[33];
+public bot_ratio_handler(player_id, menu, item) {
+    menu_destroy(menu);
+    if(item < 0)
+        return PLUGIN_HANDLED;
+    for(new iGame = 0; iGame < MAX_GAMES; iGame++) {
+        new gameAbbr[16];
+        if(!getGameAbbr(iGame, gameAbbr))
+            continue;
+
+        item--;
+        if(item < 0) {
+            g_ratio_game[player_id] = iGame;
+            client_cmd(player_id, "messagemode bots_ratio");
+            return PLUGIN_HANDLED;
+        }
+    }
+
+    new playerName[64];
+    get_user_name(player_id, playerName, 64);
+    new menuTitle[256]
+    format(menuTitle, 256, "Change the bot ratios to: %s (now: %s)? %s has started the vote.", getRatiosString(g_player_ratios[player_id]), getRatiosString(g_ratios), playerName);
+    vote_menu(player_id, menuTitle, "change_bot_ratios");
+    return PLUGIN_HANDLED;
+}
+
+public bots_ratio(player_id) {
+    if(read_argc() > 1 && g_ratio_game[player_id] != -1) {
+        new ratioText[16];
+        read_argv(1, ratioText, 16);
+        new Float:newRatio = floatclamp(str_to_float(ratioText), 0.0, 100.0);
+        
+        new Float:sumOthers = 0.0;
+        for(new iGame = 0; iGame < MAX_GAMES; iGame++) {
+            if(iGame != g_ratio_game[player_id])
+                sumOthers += g_player_ratios[player_id][iGame] / 100.0;
+        }
+        
+        if(sumOthers == 0.0) {
+            newRatio = 100.0;
+        } else {
+            new Float:factor = (1.0 - (newRatio / 100.0)) / sumOthers;
+            server_print("%f %f", sumOthers, factor);
+            for(new iGame = 0; iGame < MAX_GAMES; iGame++)
+                g_player_ratios[player_id][iGame] *= factor;
+        }
+        g_player_ratios[player_id][g_ratio_game[player_id]] = newRatio;
+        ratios_menu(player_id);
+    }
+    g_ratio_game[player_id] = -1;
+}
+
+public change_bot_ratios() {
+    for(new iGame = 0; iGame < MAX_GAMES; iGame++)
+        g_ratios[iGame] = g_player_ratios[g_votePlayerId][iGame];
+
+    ANNOUNCE(g_votePlayerId, "%s has changed the bot ratios to: %s", getRatiosString(g_ratios));    
+}
+
+teams_menu(player_id) {
+    new menu = menu_create("Change bot teams", "bot_teams_handler");
+    for(new iGame = 0; iGame < MAX_GAMES; iGame++) {
+        new gameAbbr[16];
+        if(getGameAbbr(iGame, gameAbbr)) {
+            new gameRatio[32];
+            format(gameRatio, 32, "%s (%s)", gameAbbr, g_teamNames[g_player_teams[player_id][iGame]]);
+            menu_additem(menu, gameRatio);
+        }
+    }
+    menu_additem(menu, "Save");
+    menu_display(player_id, menu);
+}
+
+public bot_teams_handler(player_id, menu, item) {
+    menu_destroy(menu);
+    if(item < 0)
+        return PLUGIN_HANDLED;
+    for(new iGame = 0; iGame < MAX_GAMES; iGame++) {
+        new gameAbbr[16];
+        if(!getGameAbbr(iGame, gameAbbr))
+            continue;
+
+        item--;
+        if(item < 0) {
+            g_player_teams[player_id][iGame] = (g_player_teams[player_id][iGame] + 1) % sizeof(g_teamNames);
+            teams_menu(player_id);
+            return PLUGIN_HANDLED;
+        }
+    }
+
+    new playerName[64];
+    get_user_name(player_id, playerName, 64);
+    new menuTitle[256]
+    format(menuTitle, 256, "Change the bot teams to: %s (now: %s)? %s has started the vote.", getTeamsString(g_player_teams[player_id]), getTeamsString(g_teams), playerName);
+    vote_menu(player_id, menuTitle, "change_bot_teams");
+    return PLUGIN_HANDLED;
+}
+
+public change_bot_teams() {
+    for(new iGame = 0; iGame < MAX_GAMES; iGame++)
+        g_teams[iGame] = g_player_teams[g_votePlayerId][iGame];
+
+    ANNOUNCE(g_votePlayerId, "%s has changed the bot teams to: %s", getTeamsString(g_teams));
+}
+
+/*public toggle_melee() {
     new newMelee = 1 - get_pcvar_num(g_bots_melee);
     ANNOUNCE(g_votePlayerId, "%s has %s ^"crowbars vs knives^"", newMelee ? "enabled" : "disabled");
     set_pcvar_num(g_bots_melee, newMelee);
-}
+}*/
 
 pick_a_game(game_counts[], sign) {
     new minGame = -1;
     new Float:minCount;
     for(new i = 0; i < MAX_GAMES; i++) {
-        if(!g_factors[i])
+        if(!g_ratios[i])
             continue;
 
-        new Float:gameCount = (sign * game_counts[i]) / g_factors[i];
+        new Float:gameCount = (sign * game_counts[i]) / (g_ratios[i] / 100.0);
         
         if(gameCount < minCount || minGame == -1) {
             minGame = i;
@@ -304,8 +482,8 @@ pick_a_game(game_counts[], sign) {
 }
 
 new g_last_difficulty = -1;
-new g_evict = false;
-new g_last_melee = -1;
+new bool:g_evict = false;
+//new g_last_melee = -1;
 
 all_jk_botti_cmd(cmd[]) {
     if(g_valve != -1)
@@ -319,6 +497,19 @@ jk_botti_cmd(iGameDll, cmd[]) {
     server_cmd("jk_botti#%d %s", iGameDll, cmd);
 }
 
+kick_bot(bot_id, bot_game, const reason[]) {
+    server_print("Kicking a bot... (%s)", reason);
+
+    if(bot_game == g_cstrike) {
+        new name[16];
+        get_user_name(bot_id, name, 16);
+        server_cmd("bot_kick ^"%s^"", name);
+    } else {
+        new userid = get_user_userid(bot_id);
+        server_cmd("kick #%d", userid);
+    }
+}
+
 public bots_think() {
     new jk_buffer[256];
 
@@ -326,10 +517,14 @@ public bots_think() {
     if(difficulty != g_last_difficulty) {
         format(jk_buffer, 256, "botskill %d", 4 - difficulty);
         all_jk_botti_cmd(jk_buffer);
+
+        server_cmd("bot ^"botskill_lower %d^"", 5 - difficulty);
+        server_cmd("bot ^"botskill_upper %d^"", 4 - difficulty);
+
         g_last_difficulty = difficulty;
         g_evict = true;
     }
-    new melee = get_pcvar_num(g_bots_melee);
+    /*new melee = get_pcvar_num(g_bots_melee);
     if(melee != g_last_melee) {
         if(melee) {
             server_cmd("bot_knives_only");
@@ -352,7 +547,7 @@ public bots_think() {
             all_jk_botti_cmd("bot_skill_setup reset");
         }
         g_last_melee = melee;
-    }
+    }*/
 
     new total_players;
     new total_bots;
@@ -382,51 +577,56 @@ public bots_think() {
 
     //add
     if(want_bots > total_bots && !g_evict) {
-        new game = pick_a_game(game_counts, 1);
-        if(game != -1) {
+        new addGame = pick_a_game(game_counts, 1);
+        if(addGame != -1) {
             new gameName[16];
-            GetGameName(game, gameName, 16);
-            server_print("Adding a %s bot... (%d < %d)", gameName, total_bots, want_bots);
+            GetGameName(addGame, gameName, 16);
+            server_print("Adding a %s %s bot... (%d < %d)", gameName, g_teamNames[g_teams[addGame]], total_bots, want_bots);
 
-            if(game == g_cstrike) {
-                server_cmd("bot_add");
+            if(addGame == g_cstrike) {
+                new csTeamAdd[][] = {"bot_add", "bot_add_ct", "bot_add_t"};
+                server_cmd(csTeamAdd[g_teams[addGame]]);
+            } else if(addGame == g_tfc) {
+                server_cmd("bot ^"addbot %d^"", g_teams[addGame]);
             } else {
-                jk_botti_cmd(game, "addbot UNASSIGNED");
+                new jkTeamAdd[][] = {"addbot UNASSIGNED", "addbot CT", "addbot TERRORIST"};
+                jk_botti_cmd(addGame, jkTeamAdd[g_teams[addGame]]);
             }
         }
     }
 
     //kick
-    if(want_bots < total_bots || g_evict) {
-        new game = pick_a_game(game_counts, -1);
-        if(game != -1) {
-            new gameName[16];
-            GetGameName(game, gameName, 16);
-            if(g_evict)
-                server_print("Kicking a %s bot... (evict)", gameName);
-            else
-                server_print("Kicking a %s bot... (%d > %d)", gameName, total_bots, want_bots);
-
-            new bot_id;
+    new bool:kickAnyone = want_bots < total_bots || g_evict;
+    new bool:kicked = false;
+    if(kickAnyone) {
+        new kickGame = pick_a_game(game_counts, -1);
+        if(kickGame != -1) {
             new bot_game;
-
             for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
                 if(!is_user_connected(player_id) || !is_user_bot(player_id))
                     continue;
 
-                bot_id = player_id;
                 bot_game = GetEntityOwner(player_id);
-                if(bot_game == game)
+                if(bot_game == kickGame) {
+                    kick_bot(player_id, bot_game, g_evict ? "evict" : "quota");
+                    kicked = true;
                     break;
+                }
             }
+        }
+    }
+    if(!kicked) {
+        //kick bad team
+        for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
+            if(!is_user_connected(player_id) || !is_user_bot(player_id))
+                continue;
 
-            if(bot_game == g_cstrike) {
-                new name[16];
-                get_user_name(bot_id, name, 16);
-                server_cmd("bot_kick ^"%s^"", name);
-            } else {
-                new userid = get_user_userid(bot_id);
-                server_cmd("kick #%d", userid);
+            new bot_game = GetEntityOwner(player_id);
+            new bot_team = pev(player_id, pev_team);
+            if(kickAnyone || (g_teams[bot_game] && bot_team && bot_team != g_teams[bot_game])) {
+                kick_bot(player_id, bot_game, kickAnyone ? "anyone" : "team");
+                kicked = true;
+                break;
             }
         }
     }
