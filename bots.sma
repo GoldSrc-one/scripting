@@ -14,11 +14,12 @@ new g_tfc = -1;
 new g_difficulties[][] = {"Easy", "Normal", "Hard", "Expert"}
 new Float:g_ratios[MAX_GAMES];
 new g_teams[MAX_GAMES];
+new bool:g_deathmatch = true;
 
 const g_bots_think_task = 1;
 const g_vote_menu_task = 100;
 const g_vote_action_task = 200;
-const g_dmc_notarget_think_task = 1;
+const g_notarget_think_task = 1;
 
 public plugin_init() {
     register_plugin("Bots", "0.0", "GoldSrc.one");
@@ -45,6 +46,8 @@ public plugin_init() {
     g_gearbox = GetGameIndex("gearbox");
     if(g_gearbox != -1)
         g_ratios[g_gearbox] = random_float(20.0, 30.0);
+        
+    g_dmc = GetGameIndex("dmc");
 
     g_tfc = GetGameIndex("tfc");
     if(g_tfc != -1)
@@ -56,9 +59,9 @@ public plugin_init() {
     for(new iGame = 0; iGame < MAX_GAMES; iGame++)
         g_ratios[iGame] /= ratioSum;
 
-    g_dmc = GetGameIndex("dmc");
-    if(g_dmc != -1)
-        set_task(0.1, "dmc_notarget_think", g_dmc_notarget_think_task, _, _, "b");
+    set_task(0.1, "notarget_think", g_notarget_think_task, _, _, "b");
+
+    g_deathmatch = GetEntityOwner(0) != g_cstrike;
 }
 
 public CreateFakeClientPre(netname[]) {
@@ -273,6 +276,11 @@ public bots_menu_handler(player_id, menu, item) {
         ratios_menu(player_id);
     }
     if(item == 4) {
+        if(g_deathmatch) {
+            bots_menu(player_id);
+            return PLUGIN_HANDLED;
+        }
+
         for(new iGame = 0; iGame < MAX_GAMES; iGame++)
             g_player_teams[player_id][iGame] = g_teams[iGame];
 
@@ -649,20 +657,27 @@ public bots_advertise(player_id) {
     return PLUGIN_CONTINUE;
 }
 
-public dmc_notarget_think() {
-    for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-        if(!is_user_alive(player_id))
-            continue;
+new g_player_id;
+new bool:g_spy_notarget;
+public SpyNoTarget() {
+    g_spy_notarget = (pev(g_player_id, pev_deadflag) == 5 || get_pdata_int(g_player_id, 22) == 2);
+}
 
-        if(GetEntityOwner(player_id) != g_dmc)
+public notarget_think() {
+    for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
+        if(pev_valid(player_id) && !is_user_alive(player_id))
             continue;
         
         new bool:notarget = false;
-        if(pev(player_id, pev_renderfx) == kRenderFxGlowShell) {
+        if(GetEntityOwner(player_id) == g_dmc && pev(player_id, pev_renderfx) == kRenderFxGlowShell) {
             new Float:renderamt;
             pev(player_id, pev_renderamt, renderamt);
             if(renderamt == 5.0 || pev(player_id, pev_rendermode) == kRenderTransColor)
                 notarget = true;
+        } else if(GetEntityOwner(player_id) == g_tfc && pev(player_id, pev_playerclass) == 8) {
+            g_player_id = player_id;
+            GameContext(g_tfc, "SpyNoTarget");
+            notarget = g_spy_notarget;
         }
         
         if(notarget)

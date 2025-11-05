@@ -43,22 +43,13 @@ can_replace_bot(player_id) {
     return true;
 }
 
-new g_player_id;
-public spawn_player() {
-    SpawnPlayer(g_player_id);
-}
-
 public letmeplay(player_id) {
     if(!can_replace_bot(player_id))
 		return PLUGIN_HANDLED;
         
     new bot_id = pev(player_id, pev_iuser2);
-    
-    set_pev(player_id, pev_iuser1, 0);
-    set_pev(player_id, pev_maxspeed, 0.0);
 
-    g_player_id = player_id;
-    GameContext(GetEntityOwner(player_id), "spawn_player");
+    RoundRespawn(player_id);
 
     new Float:origin[3];
     pev(bot_id, pev_origin, origin);

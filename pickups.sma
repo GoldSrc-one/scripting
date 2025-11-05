@@ -362,6 +362,8 @@ public Equip() {
     if(!classname[0])
         return;
 
+    g_equip_delete = false;
+
     if(playerOwner == g_tfc) {
         if(equal(classname, "weaponbox")) {
             const Float:factor = 0.2;
@@ -405,6 +407,20 @@ public Equip() {
             g_equip_delete = true;
             return;
         }
+        //give ammo for the gun beforehand
+        for(new iWeapon = 0; iWeapon < get_num_ammo(g_tfc); iWeapon++) {
+            if(!equal(classname, get_ammo_weapon(g_tfc, iWeapon)))
+                continue;
+            
+            if(give_item2(get_ammo_classname(g_tfc, iWeapon)))
+                g_equip_delete = true;
+
+            //give metal to the engineer
+            if(tfcClass + 1 == 9 && give_item2("item_cells"))
+                g_equip_delete = true;
+                
+            break;
+        }
     }
 
     new times = 1;
@@ -443,7 +459,6 @@ public Equip() {
             times = 3;
     }
 
-    g_equip_delete = false;
     for(new i = 0; i < times; i++) {
         if(give_item2(classname))
             g_equip_delete = true;

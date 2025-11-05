@@ -62,14 +62,11 @@ native GetEntityOwner(entityIndex);
 native GameContext(gameIndex, const callback[]);
 
 /**
- * Respawns the player, skipping round-restart check.
- * Must be called from inside a GameContext
+ * Respawn the player as if new CS round just started.
  *
  * @param playerIndex	 Number between 1 and 32 inclusive.
- *
- * @return				 True on success.
  */
-native bool:SpawnPlayer(playerIndex);
+native RoundRespawn(playerIndex);
 
 /**
  * Get the name of the game for given client.
