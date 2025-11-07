@@ -366,6 +366,12 @@ public equip_dmc() {
     return FMRES_HANDLED;
 }
 
+public equip_defuser() {
+    new bools = get_pdata_int(g_player_id, 193);
+    bools |= 1 << 12; //m_bHasDefuser
+    set_pdata_int(g_player_id, 193, bools);
+}
+
 public PostPlayerSpawn(player_id) {
     if(!g_active)
         return;
@@ -394,6 +400,8 @@ public PostPlayerSpawn(player_id) {
         GameContext(game, "equip_gearbox");
         g_equip_gearbox[player_id] = true;
     }
+    
+    GameContext(g_cstrike, "equip_defuser");
     
     if(!g_wish_granted[player_id] && game != g_tfc)
         client_print(player_id, print_chat, "Say /wish to pick guns you would like to get in the next round.");
