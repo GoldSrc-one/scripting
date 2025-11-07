@@ -181,7 +181,6 @@ public equip_cstrike() {
     fm_strip_user_weapons(g_player_id);
 
     fm_give_item(g_player_id, "item_assaultsuit");
-    fm_give_item(g_player_id, "item_longjump");
 
     new pistolCategory = -1;
     new primaryCategory = -1;
