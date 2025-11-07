@@ -400,7 +400,7 @@ public PostPlayerSpawn(player_id) {
         GameContext(game, "equip_gearbox");
         g_equip_gearbox[player_id] = true;
     }
-    
+
     GameContext(g_cstrike, "equip_defuser");
     
     if(!g_wish_granted[player_id] && game != g_tfc)
