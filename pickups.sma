@@ -56,6 +56,7 @@ public plugin_init() {
     register_forward(FM_AddToFullPack, "AddToFullPackPost", 1);
     register_forward(FM_Touch, "TouchPre", 0);
     register_forward(FM_CreateNamedEntity, "CreateNamedEntityPost", 1);
+    register_forward(FM_CreateEntity, "CreateEntityPost", 1);
     register_forward(FM_OnFreeEntPrivateData, "OnFreeEntPrivateDataPost", 1);
     register_forward(FM_EmitSound, "EmitSoundPost", 1);
 
@@ -395,6 +396,10 @@ public Equip() {
                     g_equip_delete = true;
                 }
             }
+
+            if(g_equip_delete)
+                engfunc(EngFunc_EmitSound, g_equip_item, CHAN_ITEM, "items/ammopickup2.wav", 1.0, ATTN_NORM, 0, 100);
+
             return;
         }
         for(new iGrenade = 0; iGrenade < NumTfcGrenades(tfcClass); iGrenade++) {
@@ -486,7 +491,7 @@ public DeleteWeaponbox() {
         }
     }
 
-    if(equal(classname, "weaponbox") || equal(classname, "weapon_shield")) {
+    if(equal(classname, "weaponbox") || equal(classname, "weapon_shield") || equal(classname, "tf_ammobox")) {
         //delete the original weaponbox by mere thought
         fm_call_think(g_equip_item);
     }
@@ -608,7 +613,7 @@ public OnWeaponboxCreate(entity) {
 
     new classname[32];
     pev(entity, pev_classname, classname, 32);
-    if(!equal(classname, "weaponbox"))
+    if(!equal(classname, "weaponbox") && !equal(classname, "tf_ammobox"))
         return;
 
     new numEntities = global_get(glb_maxEntities);
@@ -679,10 +684,13 @@ bool:IsAmmo(const classname[]) {
             if(equal(classname, get_ammo_classname(g_dmc, iAmmo)))
                 return true;
     
+    if(equal(classname, "tf_ammobox"))
+        return true;
+    
     return false;
 }
 
-const Float:maxAmmoDistance = 256.0;
+const Float:maxAmmoDistance = 128.0;
 
 PrepareAmmoPickup(entity, const classname[]) {
     new Float:entityOrigin[3];
@@ -698,7 +706,10 @@ PrepareAmmoPickup(entity, const classname[]) {
 
         new weaponClassname[32];
         pev(iWeapon, pev_classname, weaponClassname, 32);
-        if(contain(weaponClassname, "weapon_") != 0)
+        if(equal(weaponClassname, classname))
+            continue; //same ammo type
+
+        if(contain(weaponClassname, "weapon_") != 0 && !IsAmmo(weaponClassname))
             continue;
         
         new Float:weaponOrigin[3];
@@ -707,7 +718,9 @@ PrepareAmmoPickup(entity, const classname[]) {
         if(distance >= weaponDistance)
             continue;
         
-        nearestWeapon = iWeapon;
+        //if the closest item is ammo of a different type, force a random ammo instead
+        nearestWeapon = IsAmmo(weaponClassname) ? 0 : iWeapon;
+
         weaponDistance = distance;
     }
 
@@ -718,46 +731,43 @@ PrepareAmmoPickup(entity, const classname[]) {
         g_pickup_modelindex[iGame][entity] = 0;
         
         if(iGame == g_tfc) {
-            if(nearestWeapon) {
-                for(new iTfcClass = 0; iTfcClass < maxTfcClasses; iTfcClass++) {
-                    g_tfc_classname[iTfcClass][entity] = "";
-                    g_tfc_modelindex[iTfcClass][entity] = 0;
-                    for(new iAmmo = 0; iAmmo < get_num_ammo(iGame); iAmmo++) {
-                        if(!equal(g_tfc_classname[iTfcClass][nearestWeapon], get_ammo_weapon(iGame, iAmmo)))
-                            continue;
-
-                        copy(g_tfc_classname[iTfcClass][entity], 32, get_ammo_classname(iGame, iAmmo));
-                        g_tfc_modelindex[iTfcClass][entity] = g_ammo_modelindices[iGame][iAmmo];
-                        break;
-                    }
-                }
+            for(new iTfcClass = 0; iTfcClass < maxTfcClasses; iTfcClass++) {
+                g_tfc_classname[iTfcClass][entity] = "";
+                g_tfc_modelindex[iTfcClass][entity] = 0;
             }
-            continue;
         }
 
-        new bool:exactMatch = false;
+        //start with random ammo index
+        new ammoIndex = random(get_num_ammo(iGame));
+
+        //use ammo for nearest weapon if found
+        if(nearestWeapon) {
+            for(new iAmmo = 0; iAmmo < get_num_ammo(iGame); iAmmo++) {
+                if(equal(g_pickup_classname[iGame][nearestWeapon], get_ammo_weapon(iGame, iAmmo))) {
+                    ammoIndex = iAmmo;
+                    break;
+                }
+            }
+        }
+
+        //use the exactly same ammo if available
         for(new iAmmo = 0; iAmmo < get_num_ammo(iGame); iAmmo++) {
             if(equal(classname, get_ammo_classname(iGame, iAmmo))) {
-                copy(g_pickup_classname[iGame][entity], 32, classname);
-                g_pickup_modelindex[iGame][entity] = g_ammo_modelindices[iGame][iAmmo];
-                exactMatch = true;
+                ammoIndex = iAmmo;
                 break;
             }
         }
         
-        //TODO: random ammo
-
-        if(exactMatch || !nearestWeapon)
-            continue;
-
-        for(new iAmmo = 0; iAmmo < get_num_ammo(iGame); iAmmo++) {
-            if(!equal(g_pickup_classname[iGame][nearestWeapon], get_ammo_weapon(iGame, iAmmo)))
-                continue;
-
-            copy(g_pickup_classname[iGame][entity], 32, get_ammo_classname(iGame, iAmmo));
-            g_pickup_modelindex[iGame][entity] = g_ammo_modelindices[iGame][iAmmo];
-            break;
+        if(iGame == g_tfc) {
+            for(new iTfcClass = 0; iTfcClass < maxTfcClasses; iTfcClass++) {
+                copy(g_tfc_classname[iTfcClass][entity], 32, get_ammo_classname(iGame, ammoIndex));
+                g_tfc_modelindex[iTfcClass][entity] = g_ammo_modelindices[iGame][ammoIndex];
+            }
+        } else {
+            copy(g_pickup_classname[iGame][entity], 32, get_ammo_classname(iGame, ammoIndex));
+            g_pickup_modelindex[iGame][entity] = g_ammo_modelindices[iGame][ammoIndex];
         }
+
         //server_print("^t%d %s %d", iGame, g_pickup_classname[iGame][entity], g_pickup_modelindex[iGame][entity]);
     }
 }
@@ -928,6 +938,15 @@ public CreateNamedEntityPost(iClassname) {
         if(equal(classname, "item_backpack")) {
             set_task(0.0, "OnDmcBackpackCreate", entity);
         }
+    }
+    return FMRES_HANDLED;
+}
+
+public CreateEntityPost() {
+    new entity = get_orig_retval();
+    if(entity) {
+        g_entity_pickups[entity] = false;
+        set_task(0.0, "OnWeaponboxCreate", entity);
     }
     return FMRES_HANDLED;
 }
