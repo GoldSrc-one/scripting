@@ -417,12 +417,23 @@ public Equip() {
             if(!equal(classname, get_ammo_weapon(g_tfc, iWeapon)))
                 continue;
             
-            if(give_item2(get_ammo_classname(g_tfc, iWeapon)))
+            const tfcAmmoTimes = 4;
+            for(new i = 0; i < tfcAmmoTimes; i++) {
+                if(!give_item2(get_ammo_classname(g_tfc, iWeapon)))
+                    break;
+                    
                 g_equip_delete = true;
+            }
 
             //give metal to the engineer
-            if(tfcClass + 1 == 9 && give_item2("item_cells"))
-                g_equip_delete = true;
+            if(tfcClass + 1 == 9) {
+                for(new i = 0; i < tfcAmmoTimes; i++) {
+                    if(!give_item2("item_cells"))
+                        break;
+
+                    g_equip_delete = true;
+                }
+            }
                 
             break;
         }
