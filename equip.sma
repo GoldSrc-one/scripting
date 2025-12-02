@@ -153,9 +153,6 @@ get_wish_or_random(game, category) {
 }
 
 public equip_valve() {
-    give_item_times(g_player_id, "item_battery", 7);
-    fm_give_item(g_player_id, "item_longjump");
-
     give_item_times(g_player_id, get_wish_or_random(g_valve, e_valve_pistols), 3);
 
     if(!g_pistol_only) {
@@ -172,6 +169,9 @@ public equip_valve() {
             g_wish_granted[g_player_id] = true;
         }
         fm_give_item(g_player_id, get_game_category_item(g_valve, e_valve_grenades, grenadeIndex));
+
+        give_item_times(g_player_id, "item_battery", 7);
+        fm_give_item(g_player_id, "item_longjump");
     }
 
     fm_give_item(g_player_id, "weapon_crowbar");
@@ -179,8 +179,6 @@ public equip_valve() {
 
 public equip_cstrike() {
     fm_strip_user_weapons(g_player_id);
-
-    fm_give_item(g_player_id, "item_assaultsuit");
 
     new pistolCategory = -1;
     new primaryCategory = -1;
@@ -206,6 +204,7 @@ public equip_cstrike() {
 
         fm_give_item(g_player_id, "weapon_hegrenade");
         give_item_times(g_player_id, "weapon_flashbang", 2);
+        fm_give_item(g_player_id, "item_assaultsuit");
     }
 
     fm_give_item(g_player_id, "weapon_knife");
@@ -289,13 +288,12 @@ public equip_gearbox() {
         give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_primaries), 5);
         give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_specials), 5);
         fm_give_item(g_player_id, "weapon_penguin");
+        give_item_times(g_player_id, "item_battery", 7);
     }
 
     give_item_times(g_player_id, "weapon_eagle", 7);
 
     fm_give_item(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_melees));
-
-    give_item_times(g_player_id, "item_battery", 7);
 
     return FMRES_HANDLED;
 }
@@ -357,13 +355,12 @@ public equip_dmc() {
 
         g_dmc_powerup[g_player_id] = get_wish_or_random_index(g_dmc, e_dmc_powerups);
         client_print(g_player_id, print_chat, "You got %s, double tap the use key to activate for %.0f seconds!", get_game_category_item(g_dmc, e_dmc_powerups, g_dmc_powerup[g_player_id]), g_dmc_powerup_durations[g_dmc_powerup[g_player_id]]);
+
+        give_item_times(g_player_id, "item_armor1", 1, true);
     }
     give_item_times(g_player_id, "item_shells", 4, true);
     give_item_times(g_player_id, "item_spikes", 7, true);
     give_item_times(g_player_id, "item_cells", 1, true);
-
-    give_item_times(g_player_id, "item_armor1", 1, true);
-
     return FMRES_HANDLED;
 }
 
