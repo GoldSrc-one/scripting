@@ -22,6 +22,11 @@ public plugin_init() {
 
     g_tfc = GetGameIndex("tfc");
 
+    if(GetEntityOwner(0) == g_tfc){
+        g_active = false;
+        return;
+    }
+
     register_forward(FM_CreateNamedEntity, "CreateNamedEntityPre", 0);
 }
 

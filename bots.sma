@@ -21,6 +21,8 @@ const g_vote_menu_task = 100;
 const g_vote_action_task = 200;
 const g_notarget_think_task = 1;
 
+new g_teamNames[3][8] = {"ANY", "BLUE", "RED"};
+
 public plugin_init() {
     register_plugin("Bots", "0.0", "GoldSrc.one");
     register_clcmd("say bots", "bots_menu");
@@ -61,7 +63,14 @@ public plugin_init() {
 
     set_task(0.1, "notarget_think", g_notarget_think_task, _, _, "b");
 
-    g_deathmatch = GetEntityOwner(0) != g_cstrike;
+    if(GetEntityOwner(0) == g_cstrike) {
+        g_deathmatch = false;
+        g_teamNames[1] = "CT";
+        g_teamNames[2] = "T";
+    }
+    if(GetEntityOwner(0) == g_tfc) {
+        g_deathmatch = false;
+    }
 }
 
 public CreateFakeClientPre(netname[]) {
@@ -202,7 +211,6 @@ getRatiosString(const Float:ratios[]) {
     return ratiosString;
 }
 
-new g_teamNames[][] = {"ANY", "CT", "T"};
 getTeamsString(const teams[]) {
     new teamsString[64];
     new pos = 0;
@@ -597,7 +605,7 @@ public bots_think() {
             } else if(addGame == g_tfc) {
                 server_cmd("bot ^"addbot %d^"", g_teams[addGame]);
             } else {
-                new jkTeamAdd[][] = {"addbot UNASSIGNED", "addbot CT", "addbot TERRORIST"};
+                new jkTeamAdd[][] = {"addbot UNASSIGNED", "addbot BLUE", "addbot RED"};
                 jk_botti_cmd(addGame, jkTeamAdd[g_teams[addGame]]);
             }
         }

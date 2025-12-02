@@ -834,6 +834,9 @@ PreparePickup(entity, const classname[]) {
         if(equal(model, "models/w_backpack.mdl"))
             return;
     }
+    //don't eat the flag!
+    if(wbOwner == g_tfc && equal(classname, "item_tfgoal"))
+        return;
 
     g_entity_pickups[entity] = true;
 

@@ -20,7 +20,7 @@ new g_cstrike_category_names[][32] = { "T Pistol", "CT Pistol", "T Primary", "CT
 new g_gearbox_category_names[][32] = { "Melee", "Primary", "Special", "PowerUp" };
 new g_dmc_category_names[][32] = { "Nailgun", "Special", "PowerUp" };
 
-new Float:g_dmc_powerup_durations[] = {5.0, 15.0, 10.0};
+new Float:g_dmc_powerup_durations[] = {3.0, 15.0, 10.0};
 
 new bool:g_active = true;
 new bool:g_pistol_only = false;
@@ -28,7 +28,7 @@ new bool:g_pistol_only = false;
 public plugin_init() {
     register_plugin("Equip", "22092025", "GoldSrc.one");
 
-    if(GetEntityOwner(0) != GetGameIndex("cstrike")) {
+    if(GetEntityOwner(0) != GetGameIndex("cstrike") && GetEntityOwner(0) != GetGameIndex("tfc")) {
         g_active = false;
         return;
     }
@@ -119,10 +119,10 @@ public PrePlayerSpawn(player_id) {
     if(!g_active)
         return;
 
-    if(!is_user_connected(player_id))
+    new game = GetEntityOwner(player_id);
+    if(game == g_cstrike && !is_user_connected(player_id))
         return;
 
-    new game = GetEntityOwner(player_id);
     if(game != g_dmc && game != g_tfc) {
         g_player_id = player_id;
         GameContext(game, "add_equip_prevention");
@@ -190,7 +190,8 @@ public equip_cstrike() {
     }
 
     if(pev(g_player_id, pev_team) == 1){
-        fm_give_item(g_player_id, "item_thighpack");
+        if(GetEntityOwner(0) == g_cstrike)
+            fm_give_item(g_player_id, "item_thighpack");
 
         pistolCategory = e_cstrike_ct_pistols;
         primaryCategory = e_cstrike_ct_primaries;        
@@ -375,15 +376,15 @@ public equip_defuser() {
 public PostPlayerSpawn(player_id) {
     if(!g_active)
         return;
-        
-    if(!is_user_connected(player_id))
+
+    new game = GetEntityOwner(player_id);
+    if(game == g_cstrike && !is_user_connected(player_id))
         return;
 
     g_wish_granted[player_id] = false;
 
     g_player_id = player_id;
 
-    new game = GetEntityOwner(player_id);
     if(game != g_dmc && game != g_tfc)
         GameContext(game, "remove_equip_prevention");
 
@@ -401,7 +402,8 @@ public PostPlayerSpawn(player_id) {
         g_equip_gearbox[player_id] = true;
     }
 
-    GameContext(g_cstrike, "equip_defuser");
+    if(game != g_cstrike && pev(g_player_id, pev_team) == 1 && GetEntityOwner(0) == g_cstrike)
+        GameContext(g_cstrike, "equip_defuser");
     
     if(!g_wish_granted[player_id] && game != g_tfc)
         client_print(player_id, print_chat, "Say /wish to pick guns you would like to get in the next round.");

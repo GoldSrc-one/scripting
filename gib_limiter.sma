@@ -18,7 +18,7 @@ public SetModelPost(entity, const model[]) {
     if(!equal(classname, "gib"))
         return FMRES_IGNORED;
 
-    if(pev_valid(g_gibs[g_gibIndex])) {
+    if(g_gibs[g_gibIndex] != entity && pev_valid(g_gibs[g_gibIndex])) {
         pev(g_gibs[g_gibIndex], pev_classname, classname, 32);
         if(equal(classname, "gib")) {
             fm_remove_entity(g_gibs[g_gibIndex]);
