@@ -355,6 +355,14 @@ bool:give_item2(const classname[]) {
     return delete;
 }
 
+bool:give_item_times(const classname[], times) {
+    for(new i = 0; i < times; i++)
+        if(!give_item2(classname))
+            return false;
+
+    return true;
+}
+
 public Equip() {
     new playerOwner = GetEntityOwner(g_equip_player);
     new tfcClass = playerOwner == g_tfc ? GetTfcClass(g_equip_player) : -1;
@@ -418,22 +426,11 @@ public Equip() {
                 continue;
             
             const tfcAmmoTimes = 4;
-            for(new i = 0; i < tfcAmmoTimes; i++) {
-                if(!give_item2(get_ammo_classname(g_tfc, iWeapon)))
-                    break;
-                    
-                g_equip_delete = true;
-            }
+            g_equip_delete |= give_item_times(get_ammo_classname(g_tfc, iWeapon), tfcAmmoTimes);
 
             //give metal to the engineer
-            if(tfcClass + 1 == 9) {
-                for(new i = 0; i < tfcAmmoTimes; i++) {
-                    if(!give_item2("item_cells"))
-                        break;
-
-                    g_equip_delete = true;
-                }
-            }
+            if(tfcClass + 1 == 9)
+                g_equip_delete |= give_item_times("item_cells", tfcAmmoTimes);
                 
             break;
         }
@@ -475,10 +472,7 @@ public Equip() {
             times = 3;
     }
 
-    for(new i = 0; i < times; i++) {
-        if(give_item2(classname))
-            g_equip_delete = true;
-    }
+    g_equip_delete |= give_item_times(classname, times);
 }
 
 public DeleteWeaponbox() {
@@ -805,6 +799,9 @@ PrepareItemPickup(entity, const classname[]) {
 
         new bool:exactMatch = false;
         new numItems = get_num_items(iGame);
+        if(iGame == g_dmc && GetEntityOwner(0) == g_tfc)
+            numItems = 4; //do not give dmc powerups in tfc
+
         for(new iItem = 0; iItem < numItems; iItem++) {
             if(equal(classname, get_item(iGame, iItem))) {
                 copy(g_pickup_classname[iGame][entity], 32, classname);
@@ -1028,4 +1025,63 @@ unset_entity_pickup(entity) {
 public OnFreeEntPrivateDataPost(entity) {
     unset_entity_pickup(entity);
     return FMRES_HANDLED;
+}
+
+new g_give_shells;
+new g_give_nails;
+new g_give_rockets;
+new g_give_cells;
+new g_give_result;
+public GiveTFAmmo(playerIndex, shells, nails, rockets, cells) {
+    new playerOwner = GetEntityOwner(playerIndex);
+    if(playerOwner == g_tfc)
+        return PLUGIN_CONTINUE;
+
+    g_equip_player = playerIndex;
+    g_give_shells = shells;
+    g_give_nails = nails;
+    g_give_rockets = rockets;
+    g_give_cells = cells;
+    GameContext(playerOwner, "GiveAmmo");
+    return g_give_result;
+}
+
+public GiveAmmo(){
+    new bool:given;
+    new playerOwner = GetEntityOwner(g_equip_player);
+    if(playerOwner == g_valve || playerOwner == g_gearbox) {
+        given |= give_item_times("ammo_buckshot", (g_give_shells + 6) / 12);
+        given |= give_item_times("ammo_9mmclip", (g_give_nails + 9) / 17);
+        given |= give_item_times("ammo_357", (g_give_nails + 3) / 6);
+        given |= give_item_times("ammo_rpgclip", (g_give_rockets + 1) / 2);
+        given |= give_item_times("ammo_crossbow", (g_give_rockets + 3) / 5);
+        given |= give_item_times("ammo_ARgrenades", (g_give_rockets + 1) / 2);
+        given |= give_item_times("ammo_egonclip", (g_give_cells + 10) / 20);
+    }
+    if(playerOwner == g_gearbox) {
+        given |= give_item_times("ammo_556", (g_give_shells + 25) / 50);
+        given |= give_item_times("ammo_762", (g_give_shells + 3) / 5);
+        given |= give_item_times("ammo_eagle", (g_give_nails + 4) / 7);
+        given |= give_item_times("ammo_spore", g_give_rockets);
+    }
+    if(playerOwner == g_cstrike) {
+        given |= give_item_times("ammo_buckshot", (g_give_shells + 4) / 8);
+        given |= give_item_times("ammo_45acp", (g_give_nails + 6) / 12);
+        given |= give_item_times("ammo_57mm", (g_give_nails + 25) / 50);
+        given |= give_item_times("ammo_50ae", (g_give_nails + 4) / 7);
+        given |= give_item_times("ammo_357sig", (g_give_nails + 7) / 13);
+        given |= give_item_times("ammo_9mm", (g_give_nails + 15) / 30);
+        given |= give_item_times("ammo_338magnum", (g_give_cells + 5) / 10);
+        given |= give_item_times("ammo_762nato", (g_give_cells + 15) / 30);
+        given |= give_item_times("ammo_556nato", (g_give_cells + 15) / 30);
+        given |= give_item_times("ammo_556natobox", (g_give_cells + 15) / 30);        
+    }
+    if(playerOwner == g_dmc) {
+        given |= give_item_times("item_shells", (g_give_shells + 10) / 20);
+        given |= give_item_times("item_nails", (g_give_nails + 13) / 25);
+        given |= give_item_times("item_rockets", (g_give_rockets + 3) / 5);
+        given |= give_item_times("item_cells", (g_give_cells + 3) / 6);
+    }
+
+    return given ? PLUGIN_HANDLED : PLUGIN_CONTINUE;
 }

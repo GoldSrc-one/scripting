@@ -107,3 +107,17 @@ forward PrePlayerSpawn(playerIndex);
  * @param playerIndex	 Number between 1 and 32 inclusive.
  */
 forward PostPlayerSpawn(playerIndex);
+
+/**
+ * Called by Team Fortress Classic when giving out ammo.
+ * Triggered by info_tfgoal or building_dispenser.
+ * Return PLUGIN_HANDLED to prevent the original function call.
+ * Return PLUGIN_CONTINUE to call the original function.
+ *
+ * @param playerIndex	 Number between 1 and 32 inclusive.
+ * @param shells         "buckshot"
+ * @param nails          "9mm"
+ * @param rockets	     "rockets"
+ * @param cells          "uranium"
+ */
+forward GiveTFAmmo(playerIndex, shells, nails, rockets, cells);

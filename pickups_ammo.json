@@ -1,6 +1,6 @@
 {
     "valve": {
-        "weapon_9mmhandgun": "ammo_9mmbox",
+        "weapon_9mmhandgun": "ammo_9mmclip",
         "weapon_357": "ammo_357",
         "weapon_shotgun": "ammo_buckshot",
         "weapon_9mmAR": "ammo_9mmAR",
@@ -36,7 +36,7 @@
         "weapon_famas": "ammo_556nato"
     },
     "gearbox": {
-        "weapon_9mmhandgun": "ammo_9mmbox",
+        "weapon_9mmhandgun": "ammo_9mmclip",
         "weapon_357": "ammo_357",
         "weapon_shotgun": "ammo_buckshot",
         "weapon_9mmAR": "ammo_9mmAR",
