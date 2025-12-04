@@ -69,6 +69,15 @@ native GameContext(gameIndex, const callback[]);
 native RoundRespawn(playerIndex);
 
 /**
+ * Notify CS and DOD about the entity classname.
+ * Use this after changing an entity's classname.
+ * Otherwise the entity will be invisible to CS/DOD.
+ *
+ * @param entityIndex	 Index of the entity that had the classname changed.
+ */
+native ClassnameChanged(entityIndex);
+
+/**
  * Get the name of the game for given client.
  * This is based on the PORT to which the client connected.
  * Use this only if you care about cstrike/czero distinction.
