@@ -25,6 +25,10 @@ new Float:g_dmc_powerup_durations[] = {3.0, 15.0, 10.0};
 new bool:g_active = true;
 new bool:g_pistol_only = false;
 
+new g_gpes[MAX_GAMES];
+new Float:g_wish_ad_interval = 120.0;
+new Float:g_last_wish_ad[33];
+
 public plugin_init() {
     register_plugin("Equip", "22092025", "GoldSrc.one");
 
@@ -44,7 +48,7 @@ public plugin_init() {
     register_clcmd("say guns", "wish_menu");
     register_clcmd("say /guns", "wish_menu");
     register_clcmd("say !guns", "wish_menu");
-    set_task(120.0, "wish_advertise", _, _, _, "b");
+    set_task(g_wish_ad_interval, "wish_advertise_all", _, _, _, "b");
 
     g_valve = GetGameIndex("valve");
     g_gearbox = GetGameIndex("gearbox");
@@ -52,11 +56,15 @@ public plugin_init() {
     g_cstrike = GetGameIndex("cstrike");
     g_tfc = GetGameIndex("tfc");
 
+    for(new iGame = 0; iGame < GetNumGames(); iGame++)
+        GameContext(iGame, "create_gpe");
+        
+    register_forward(FM_FindEntityByString, "FindEntityByStringPre", 0);
+
     if(g_gearbox != -1) {
         register_forward(FM_PlayerPostThink, "PlayerPostThinkPre", 0);
         register_forward(FM_PlayerPostThink, "PlayerPostThinkPost", 1);
         register_forward(FM_SetPhysicsKeyValue, "SetPhysicsKeyValuePost", 1);
-        register_forward(FM_FindEntityByString, "FindEntityByStringPre", 0);
         register_forward(FM_EmitSound, "EmitSoundPre", 0);
         register_logevent("remove_gearbox_ctf_items", 3, "2=drop_Damage_Powerup");
         register_logevent("remove_gearbox_ctf_items", 3, "2=drop_Ammo_Powerup");
@@ -71,6 +79,12 @@ public plugin_init() {
         register_forward(FM_CmdStart, "CmdStartPre", 0)
         GameContext(g_dmc, "precache_dmc_items");
     }
+}
+
+public create_gpe() {
+    new gpe = fm_create_entity("game_player_equip");
+    if(gpe)
+        g_gpes[GetEntityOwner(gpe)] = gpe;
 }
 
 precache_items(const items[][], count) {
@@ -103,16 +117,10 @@ give_item_times(player_id, const item[], times, bool:remove = false) {
 }
 
 new g_player_id = -1;
-new g_player_equip = -1;
 
 public add_equip_prevention() {
     if(is_user_alive(g_player_id))
         fm_strip_user_weapons(g_player_id);
-
-    if(g_player_equip != -1)
-        fm_remove_entity(g_player_equip);
-
-    g_player_equip = fm_create_entity("game_player_equip");
 }
 
 public PrePlayerSpawn(player_id) {
@@ -127,13 +135,6 @@ public PrePlayerSpawn(player_id) {
         g_player_id = player_id;
         GameContext(game, "add_equip_prevention");
     }
-}
-
-public remove_equip_prevention() {
-    if(g_player_equip != -1)
-        fm_remove_entity(g_player_equip);
-
-    g_player_equip = -1;
 }
 
 get_wish_or_random_index(game, category) {
@@ -300,6 +301,16 @@ public equip_gearbox() {
 
 public FindEntityByStringPre(entity, const key[], const value[]) {
     if(equal(key, "classname")) {
+        if(g_player_id != -1 && equal(value, "game_player_equip")) {
+            new playerOwner = GetEntityOwner(g_player_id);
+            if(playerOwner == -1 || playerOwner == g_dmc || playerOwner == g_tfc) {
+                forward_return(FMV_CELL, 0);
+            } else {
+                forward_return(FMV_CELL, entity < g_gpes[playerOwner] ? g_gpes[playerOwner] : 0);
+            }
+            return FMRES_SUPERCEDE;
+        }
+
         new ctfItems[][] = {"item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration", "item_ctfportablehev", "item_ctflongjump"};
         for(new i = 0; i < sizeof ctfItems; i++) {
             if(equal(value, ctfItems[i])) {
@@ -402,8 +413,7 @@ public PostPlayerSpawn(player_id) {
     if(game != g_cstrike && pev(g_player_id, pev_team) == 1 && GetEntityOwner(0) == g_cstrike)
         GameContext(g_cstrike, "equip_defuser");
     
-    if(!g_wish_granted[player_id] && game != g_tfc)
-        client_print(player_id, print_chat, "Say /wish to pick guns you would like to get in the next round.");
+    wish_advertise(player_id);
 }
 
 new bool:g_use_down[33];
@@ -543,12 +553,17 @@ public client_connect(player_id) {
     return PLUGIN_CONTINUE;
 }
 
-public wish_advertise() {
-    for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-        if(!is_user_connected(player_id) || is_user_alive(player_id) || g_wish_granted[player_id])
-            continue;
+wish_advertise(player_id) {
+    if(!is_user_connected(player_id) || is_user_alive(player_id) || g_wish_granted[player_id] || GetEntityOwner(player_id) == g_tfc || g_last_wish_ad[player_id] + g_wish_ad_interval > get_gametime())
+        return;
 
-        client_print(player_id, print_chat, "Say /wish to pick guns you would like to get in the next round.");
-    }
+    client_print(player_id, print_chat, "Say /wish to pick guns you would like to get in the next round.");
+    g_last_wish_ad[player_id] = get_gametime();
+}
+
+public wish_advertise_all() {
+    for(new player_id = 1; player_id <= get_maxplayers(); player_id++)
+        wish_advertise(player_id);
+        
     return PLUGIN_CONTINUE;
 }

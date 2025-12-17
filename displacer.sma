@@ -5,15 +5,17 @@
 public plugin_init() {
     register_plugin("Displacer", "0.0", "GoldSrc.one");
 
-    if(GetEntityOwner(0) != GetGameIndex("cstrike"))
-        return;
-
     register_forward(FM_Think, "ThinkPre", 0);
     register_forward(FM_Think, "ThinkPost", 1);
     register_forward(FM_Touch, "TouchPre", 0);
     register_forward(FM_Touch, "TouchPost", 1);
     
     register_forward(FM_FindEntityByString, "FindEntityByStringPre", 0);
+}
+
+new Float:g_lastSpawn[33][3];
+public PostPlayerSpawn(player_id) {
+    pev(player_id, pev_origin, g_lastSpawn[player_id]);
 }
 
 new bool:g_displacer = false;
@@ -55,8 +57,8 @@ public TouchPost(touched, other) {
 }
 
 public FindEntityByStringPre(entity, const key[], const value[]) {
-    if(g_displacer && equal(key, "classname") && equal(value, "info_player_deathmatch") && pev(g_player_id, pev_team) == 2) {
-        new newEntity = engfunc(EngFunc_FindEntityByString, entity, "classname", "info_player_start");
+    if(g_displacer && equal(key, "classname") && equal(value, "info_player_deathmatch")) {
+        new newEntity = engfunc(EngFunc_FindEntityInSphere, entity, g_lastSpawn[g_player_id], 0.0);
         forward_return(FMV_CELL, newEntity);
         return FMRES_SUPERCEDE;
     }

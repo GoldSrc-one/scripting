@@ -1085,3 +1085,55 @@ public GiveAmmo(){
 
     return given ? PLUGIN_HANDLED : PLUGIN_CONTINUE;
 }
+
+public PreDoResults(goalIndex, apIndex, bool:addBonuses) {
+    for(new iPlayer = 1; iPlayer <= 32; iPlayer++) {
+        if(!pev_valid(iPlayer) || !is_user_alive(iPlayer))
+            continue;
+
+        new playerOwner = GetEntityOwner(iPlayer);
+        if(playerOwner == -1 || playerOwner == g_tfc)
+            continue;
+        
+        set_pdata_int(iPlayer, 14, 0);
+        set_pdata_int(iPlayer, 15, 0);
+        set_pdata_int(iPlayer, 16, 4);
+        set_pdata_int(iPlayer, 17, 4);
+    }
+}
+
+new g_give_grenades1;
+new g_give_grenades2;
+public PostDoResults(goalIndex, apIndex, bool:addBonuses) {
+    for(new iPlayer = 1; iPlayer <= 32; iPlayer++) {
+        if(!pev_valid(iPlayer) || !is_user_alive(iPlayer))
+            continue;
+
+        new playerOwner = GetEntityOwner(iPlayer);
+        if(playerOwner == -1 || playerOwner == g_tfc)
+            continue;
+        
+        g_give_grenades1 = get_pdata_int(iPlayer, 14, 0);
+        g_give_grenades2 = get_pdata_int(iPlayer, 15, 0);
+        if(g_give_grenades1 || g_give_grenades2) {
+            g_equip_player = iPlayer;
+            GameContext(playerOwner, "GiveGrenades");
+        }
+    }
+}
+
+public GiveGrenades() {
+    new playerOwner = GetEntityOwner(g_equip_player);
+    if(playerOwner == g_valve || playerOwner == g_gearbox) {
+        give_item_times("weapon_handgrenade", g_give_grenades1);
+        give_item_times("weapon_tripmine", g_give_grenades2);
+        return;
+    }
+    if(playerOwner == g_cstrike) {
+        give_item_times("weapon_hegrenade", g_give_grenades1);
+        give_item_times("weapon_flashbang", g_give_grenades2);
+        return;
+    }
+    if(playerOwner == g_dmc)
+        return;
+}

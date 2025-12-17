@@ -118,6 +118,16 @@ forward PrePlayerSpawn(playerIndex);
 forward PostPlayerSpawn(playerIndex);
 
 /**
+ * Called by Team Fortress Classic before info_tfgoal gets evaluated.
+ */
+forward PreDoResults(goalIndex, apIndex, bool:addBonuses);
+
+/**
+ * Called by Team Fortress Classic after info_tfgoal gets evaluated.
+ */
+forward PostDoResults(goalIndex, apIndex, bool:addBonuses);
+
+/**
  * Called by Team Fortress Classic when giving out ammo.
  * Triggered by info_tfgoal or building_dispenser.
  * Return PLUGIN_HANDLED to prevent the original function call.

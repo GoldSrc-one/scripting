@@ -668,12 +668,13 @@ public bots_advertise(player_id) {
 new g_player_id;
 new bool:g_spy_notarget;
 public SpyNoTarget() {
-    g_spy_notarget = (pev(g_player_id, pev_deadflag) == 5 || get_pdata_int(g_player_id, 22) == 2);
+    g_spy_notarget = (pev(g_player_id, pev_deadflag) == 5 || get_pdata_int(g_player_id, 22) == 1);
+    server_print("g_spy_notarget: %d", g_spy_notarget);
 }
 
 public notarget_think() {
     for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-        if(pev_valid(player_id) && !is_user_alive(player_id))
+        if(!pev_valid(player_id) || (!is_user_alive(player_id) && pev(g_player_id, pev_deadflag) != 5))
             continue;
         
         new bool:notarget = false;

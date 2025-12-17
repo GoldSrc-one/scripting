@@ -217,7 +217,7 @@ SpawnCubicleMonster(door) {
 
 public OutOfBoundsCheck() {
     for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-        if(pev_valid(player_id) && !is_user_alive(player_id))
+        if(!pev_valid(player_id) || !is_user_alive(player_id))
             continue;
 
         new Float:origin[3];
