@@ -124,6 +124,7 @@ public add_equip_prevention() {
 }
 
 public PrePlayerSpawn(player_id) {
+    g_player_id = player_id;
     if(!g_active)
         return;
 
@@ -132,7 +133,6 @@ public PrePlayerSpawn(player_id) {
         return;
 
     if(game != g_dmc && game != g_tfc) {
-        g_player_id = player_id;
         GameContext(game, "add_equip_prevention");
     }
 }
