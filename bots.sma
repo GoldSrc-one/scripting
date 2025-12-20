@@ -410,7 +410,6 @@ public bots_ratio(player_id) {
             newRatio = 100.0;
         } else {
             new Float:factor = (1.0 - (newRatio / 100.0)) / sumOthers;
-            server_print("%f %f", sumOthers, factor);
             for(new iGame = 0; iGame < MAX_GAMES; iGame++)
                 g_player_ratios[player_id][iGame] *= factor;
         }
@@ -669,7 +668,6 @@ new g_player_id;
 new bool:g_spy_notarget;
 public SpyNoTarget() {
     g_spy_notarget = (pev(g_player_id, pev_deadflag) == 5 || get_pdata_int(g_player_id, 22) == 1);
-    server_print("g_spy_notarget: %d", g_spy_notarget);
 }
 
 public notarget_think() {
