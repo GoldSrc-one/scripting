@@ -95,9 +95,8 @@ precache_items(const items[][], count) {
     }
 }
 
-public precache_gearbox_ctf_items(){
-    new ctfItems[][] = {"item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration", "item_ctfportablehev", "item_ctflongjump"};
-    precache_items(ctfItems, sizeof ctfItems);
+public precache_gearbox_ctf_items() {
+    precache_items(g_gearbox_powerups, sizeof g_gearbox_powerups);
 }
 
 public precache_dmc_items() {
@@ -172,7 +171,6 @@ public equip_valve() {
         fm_give_item(g_player_id, get_game_category_item(g_valve, e_valve_grenades, grenadeIndex));
 
         give_item_times(g_player_id, "item_battery", 7);
-        fm_give_item(g_player_id, "item_longjump");
     }
 
     fm_give_item(g_player_id, "weapon_crowbar");
@@ -188,7 +186,7 @@ public equip_cstrike() {
         primaryCategory = e_cstrike_t_primaries;
     }
 
-    if(pev(g_player_id, pev_team) == 1){
+    if(pev(g_player_id, pev_team) == 1) {
         if(GetEntityOwner(0) == g_cstrike)
             fm_give_item(g_player_id, "item_thighpack");
 
@@ -311,9 +309,8 @@ public FindEntityByStringPre(entity, const key[], const value[]) {
             return FMRES_SUPERCEDE;
         }
 
-        new ctfItems[][] = {"item_ctfaccelerator", "item_ctfbackpack", "item_ctfregeneration", "item_ctfportablehev", "item_ctflongjump"};
-        for(new i = 0; i < sizeof ctfItems; i++) {
-            if(equal(value, ctfItems[i])) {
+        for(new i = 0; i < sizeof g_gearbox_powerups; i++) {
+            if(equal(value, g_gearbox_powerups[i])) {
                 do {
                     entity = engfunc(EngFunc_FindEntityByString, entity, key, value);
                     if(!entity)

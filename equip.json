@@ -15,7 +15,7 @@
         "melees": ["weapon_pipewrench", "weapon_knife", "weapon_grapple"],
         "primaries" : ["weapon_m249", "weapon_displacer", "weapon_sniperrifle"],
         "specials" : ["weapon_sporelauncher", "weapon_shockrifle"],
-        "powerups": ["item_ctfaccelerator", "item_ctfbackpack", "item_ctflongjump", "item_ctfportablehev", "item_ctfregeneration"]
+        "powerups": ["item_ctfaccelerator", "item_ctfbackpack", "item_ctfportablehev", "item_ctfregeneration"]
     },
     "dmc": {
         "nailguns": ["weapon_nailgun", "weapon_supernailgun"],
