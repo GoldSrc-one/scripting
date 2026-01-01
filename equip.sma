@@ -207,6 +207,10 @@ public equip_cstrike() {
     }
 
     fm_give_item(g_player_id, "weapon_knife");
+    
+    new bools = get_pdata_int(g_player_id, 129);
+    bools |= 1; //m_bHasNightVision
+    set_pdata_int(g_player_id, 129, bools);
 }
 
 new bool:g_equip_gearbox[33];
