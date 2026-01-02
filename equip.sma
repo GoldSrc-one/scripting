@@ -177,11 +177,15 @@ public equip_valve() {
 }
 
 public equip_cstrike() {
+    new vipBools = get_pdata_int(g_player_id, 209);
+    if(vipBools & 0xFF00) //m_bIsVIP
+        return;
+
     fm_strip_user_weapons(g_player_id);
 
-    new bools = get_pdata_int(g_player_id, 129);
-    bools |= 1; //m_bHasNightVision
-    set_pdata_int(g_player_id, 129, bools);
+    new nvBools = get_pdata_int(g_player_id, 129);
+    nvBools |= 1; //m_bHasNightVision
+    set_pdata_int(g_player_id, 129, nvBools);
     
     message_begin(MSG_ONE, get_user_msgid("ItemStatus"), {0, 0, 0}, g_player_id);
     write_byte(1); //ITEM_STATUS_NIGHTVISION
