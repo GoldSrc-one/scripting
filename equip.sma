@@ -179,6 +179,14 @@ public equip_valve() {
 public equip_cstrike() {
     fm_strip_user_weapons(g_player_id);
 
+    new bools = get_pdata_int(g_player_id, 129);
+    bools |= 1; //m_bHasNightVision
+    set_pdata_int(g_player_id, 129, bools);
+    
+    message_begin(MSG_ONE, get_user_msgid("ItemStatus"), {0, 0, 0}, g_player_id);
+    write_byte(1); //ITEM_STATUS_NIGHTVISION
+    message_end();
+
     new pistolCategory = -1;
     new primaryCategory = -1;
     if(pev(g_player_id, pev_team) == 2){
@@ -207,10 +215,6 @@ public equip_cstrike() {
     }
 
     fm_give_item(g_player_id, "weapon_knife");
-    
-    new bools = get_pdata_int(g_player_id, 129);
-    bools |= 1; //m_bHasNightVision
-    set_pdata_int(g_player_id, 129, bools);
 }
 
 new bool:g_equip_gearbox[33];
