@@ -177,6 +177,10 @@ public equip_valve() {
 }
 
 public equip_cstrike() {
+    new team = pev(g_player_id, pev_team);
+    if(team < 1 || team > 2)
+        return;
+
     new vipBools = get_pdata_int(g_player_id, 209);
     if(vipBools & 0xFF00) //m_bIsVIP
         return;
@@ -193,12 +197,12 @@ public equip_cstrike() {
 
     new pistolCategory = -1;
     new primaryCategory = -1;
-    if(pev(g_player_id, pev_team) == 2){
+    if(team == 2){
         pistolCategory = e_cstrike_t_pistols;
         primaryCategory = e_cstrike_t_primaries;
     }
 
-    if(pev(g_player_id, pev_team) == 1) {
+    if(team == 1) {
         if(GetEntityOwner(0) == g_cstrike)
             fm_give_item(g_player_id, "item_thighpack");
 
