@@ -356,11 +356,14 @@ bool:give_item2(const classname[]) {
 }
 
 bool:give_item_times(const classname[], times) {
-    for(new i = 0; i < times; i++)
+    new given = 0;
+    for(new i = 0; i < times; i++) {
         if(!give_item2(classname))
-            return false;
+            break;
 
-    return true;
+        given++;
+    }
+    return given > 0;
 }
 
 public Equip() {
