@@ -85,11 +85,11 @@ enum _:e_tfc_categories {
 }
 
 new g_dod_categories[][32] = {"smgs", "snipers", "grenades", "launchers", "rifles"}
-new g_dod_smgs[][32] = {"weapon_greasegun", "weapon_mp40", "weapon_mp44", "weapon_thompson"}
-new g_dod_snipers[][32] = {"weapon_scopedfg42", "weapon_scopedkar", "weapon_spring"}
+new g_dod_smgs[][32] = {"weapon_greasegun", "weapon_mp40", "weapon_mp44", "weapon_sten", "weapon_thompson"}
+new g_dod_snipers[][32] = {"weapon_scopedenfield", "weapon_scopedfg42", "weapon_scopedkar", "weapon_spring"}
 new g_dod_grenades[][32] = {"weapon_handgrenade", "weapon_stickgrenade"}
-new g_dod_launchers[][32] = {"weapon_bazooka", "weapon_pschreck"}
-new g_dod_rifles[][32] = {"weapon_30cal", "weapon_bar", "weapon_fg42", "weapon_garand", "weapon_k43", "weapon_kar", "weapon_m1carbine", "weapon_mg34", "weapon_mg42"}
+new g_dod_launchers[][32] = {"weapon_bazooka", "weapon_piat", "weapon_pschreck"}
+new g_dod_rifles[][32] = {"weapon_30cal", "weapon_bar", "weapon_bren", "weapon_enfield", "weapon_fg42", "weapon_garand", "weapon_k43", "weapon_kar", "weapon_m1carbine", "weapon_mg34", "weapon_mg42"}
 enum _:e_dod_categories {
         e_dod_smgs,
         e_dod_snipers,

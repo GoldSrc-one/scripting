@@ -43,10 +43,10 @@
         "engineer": ["tf_weapon_normalgrenade", "tf_weapon_empgrenade", "tf_weapon_railgun", "tf_weapon_supershotgun"]
     },
     "dod": {
-        "smgs": ["weapon_greasegun", "weapon_mp40", "weapon_mp44", "weapon_thompson"],
-        "snipers": ["weapon_scopedfg42", "weapon_scopedkar", "weapon_spring"],
+        "smgs": ["weapon_greasegun", "weapon_mp40", "weapon_mp44", "weapon_sten", "weapon_thompson"],
+        "snipers": ["weapon_scopedenfield", "weapon_scopedfg42", "weapon_scopedkar", "weapon_spring"],
         "grenades": ["weapon_handgrenade", "weapon_stickgrenade"],
-        "launchers": ["weapon_bazooka", "weapon_pschreck"],
-        "rifles": ["weapon_30cal", "weapon_bar", "weapon_fg42", "weapon_garand", "weapon_k43", "weapon_kar", "weapon_m1carbine", "weapon_mg34", "weapon_mg42"]
+        "launchers": ["weapon_bazooka", "weapon_piat", "weapon_pschreck"],
+        "rifles": ["weapon_30cal", "weapon_bar", "weapon_bren", "weapon_enfield", "weapon_fg42", "weapon_garand", "weapon_k43", "weapon_kar", "weapon_m1carbine", "weapon_mg34", "weapon_mg42"]
     }
 }

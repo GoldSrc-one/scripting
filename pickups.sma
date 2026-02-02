@@ -1,6 +1,7 @@
 #include <amxmodx>
 #include <fakemeta>
 #include <fakemeta_util>
+#include <messages>
 
 #include "crossplay"
 
@@ -60,6 +61,7 @@ public plugin_init() {
     register_forward(FM_CreateEntity, "CreateEntityPost", 1);
     register_forward(FM_OnFreeEntPrivateData, "OnFreeEntPrivateDataPost", 1);
     register_forward(FM_EmitSound, "EmitSoundPost", 1);
+    register_message(get_user_msgid("CurWeapon"), "CurWeapon");
 
     g_valve = GetGameIndex("valve");
     if(g_valve != -1)
@@ -78,7 +80,12 @@ public plugin_init() {
         g_ammo_offsets[g_cstrike] = 376;
 
     g_tfc = GetGameIndex("tfc");
+    if(g_tfc != -1)
+        g_ammo_offsets[g_tfc] = 574;
+
     g_dod = GetGameIndex("dod");
+    if(g_dod != -1)
+        g_ammo_offsets[g_dod] = 281;
 
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         g_game = iGame;
@@ -87,7 +94,6 @@ public plugin_init() {
 
     if(GetEntityOwner(0) == g_cstrike)
         register_logevent("logevent_round_start", 2, "1=Round_Start");
-    
     
     set_task(0.0, "LoadWeaponModelIndices");
 }
@@ -307,27 +313,29 @@ new bool:g_equip_delete;
             %0 = true
 
 fm_give_item2(index, const item[]) {
-	if (!equal(item, "weapon_", 7) && !equal(item, "ammo_", 5) && !equal(item, "item_", 5) && !equal(item, "tf_weapon_", 10))
-		return 0;
+    if (!equal(item, "weapon_", 7) && !equal(item, "ammo_", 5) && !equal(item, "item_", 5) && !equal(item, "tf_weapon_", 10))
+        return 0;
 
-	new ent = fm_create_entity(item);
-	if (!pev_valid(ent))
-		return 0;
+    new ent = fm_create_entity(item);
+    if (!pev_valid(ent))
+        return 0;
 
-	new Float:origin[3];
-	pev(index, pev_origin, origin);
-	set_pev(ent, pev_origin, origin);
-	set_pev(ent, pev_spawnflags, pev(ent, pev_spawnflags) | SF_NORESPAWN);
-	dllfunc(DLLFunc_Spawn, ent);
+    new Float:origin[3];
+    pev(index, pev_origin, origin);
+    set_pev(ent, pev_origin, origin);
+    set_pev(ent, pev_spawnflags, pev(ent, pev_spawnflags) | SF_NORESPAWN);
+    dllfunc(DLLFunc_Spawn, ent);
 
-	new save = pev(ent, pev_solid);
-	dllfunc(DLLFunc_Touch, ent, index);
-	if (pev(ent, pev_solid) != save || pev(ent, pev_flags) & FL_KILLME)
-		return ent;
+    set_pev(ent, pev_flags, pev(ent, pev_flags) | FL_ONGROUND);
 
-	engfunc(EngFunc_RemoveEntity, ent);
+    new save = pev(ent, pev_solid);
+    dllfunc(DLLFunc_Touch, ent, index);
+    if (pev(ent, pev_solid) != save || pev(ent, pev_flags) & FL_KILLME)
+        return ent;
 
-	return -1;
+    engfunc(EngFunc_RemoveEntity, ent);
+
+    return -1;
 }
 
 bool:give_item2(const classname[]) {
@@ -1148,4 +1156,25 @@ public GiveGrenades() {
     }
     if(playerOwner == g_dmc)
         return;
+}
+
+new bool:g_britSleeve[33] = {};
+public CurWeapon(msg_id, msg_dest, entity) {
+    if(entity < 1 || entity > get_maxplayers() || GetEntityOwner(entity) != g_dod)
+        return PLUGIN_CONTINUE;
+
+    if(get_msg_arg_int(1) != 1)
+        return PLUGIN_CONTINUE;
+        
+    new weaponId = get_msg_arg_int(2);
+    g_britSleeve[entity] = weaponId == 0x19 || weaponId == 0x1a || weaponId == 0x1b || weaponId == 0x1f || weaponId == 0x40;
+    set_task(0.0, "SendSleeve", entity);
+    return PLUGIN_CONTINUE;
+}
+
+public SendSleeve(entity) {
+    message_begin(MSG_ONE, get_user_msgid("GameRules"), _, entity);
+    write_byte(g_britSleeve[entity] ? 6 : 2);
+    write_byte(2);
+    message_end();
 }

@@ -13,8 +13,8 @@ new g_dmc_ammo[][32] = {"item_rockets", "item_cells", "item_spikes", "item_shell
 new g_tfc_weapon[][32] = {"tf_weapon_shotgun", "tf_weapon_ng", "tf_weapon_sniperrifle", "tf_weapon_autorifle", "tf_weapon_supershotgun", "tf_weapon_rpg", "tf_weapon_gl", "tf_weapon_pl", "tf_weapon_superng", "tf_weapon_ac", "tf_weapon_ic", "tf_weapon_flamethrower", "tf_weapon_tranq", "tf_weapon_railgun"};
 new g_tfc_ammo[][32] = {"item_shells", "item_spikes", "item_shells", "item_shells", "item_shells", "item_rockets", "item_rockets", "item_rockets", "item_spikes", "item_rockets", "item_rockets", "item_cells", "item_shells", "item_nails"};
 
-new g_dod_weapon[][32] = {"weapon_30cal", "weapon_bar", "weapon_bazooka", "weapon_fg42", "weapon_garand", "weapon_greasegun", "weapon_k43", "weapon_kar", "weapon_m1carbine", "weapon_mg34", "weapon_mg42", "weapon_mp40", "weapon_mp44", "weapon_pschreck", "weapon_scopedfg42", "weapon_scopedkar", "weapon_spring", "weapon_thompson"};
-new g_dod_ammo[][32] = {"ammo_30cal", "ammo_bar", "ammo_bazooka", "ammo_fg42", "ammo_garand", "ammo_greasegun", "ammo_k43", "ammo_kar", "ammo_m1carbine", "ammo_mg34", "ammo_mg42", "ammo_mp40", "ammo_mp44", "ammo_pschreck", "ammo_fg42", "ammo_scopedkar", "ammo_spring", "ammo_thompson"};
+new g_dod_weapon[][32] = {"weapon_30cal", "weapon_bar", "weapon_bazooka", "weapon_bren", "weapon_enfield", "weapon_fg42", "weapon_garand", "weapon_greasegun", "weapon_k43", "weapon_kar", "weapon_m1carbine", "weapon_mg34", "weapon_mg42", "weapon_mp40", "weapon_mp44", "weapon_piat", "weapon_pschreck", "weapon_scopedenfield", "weapon_scopedfg42", "weapon_scopedkar", "weapon_spring", "weapon_sten", "weapon_thompson"};
+new g_dod_ammo[][32] = {"ammo_30cal", "ammo_bar", "ammo_bazooka", "ammo_bren", "ammo_enfield", "ammo_fg42", "ammo_garand", "ammo_greasegun", "ammo_k43", "ammo_kar", "ammo_m1carbine", "ammo_mg34", "ammo_mg42", "ammo_mp40", "ammo_mp44", "ammo_piat", "ammo_pschreck", "ammo_enfield", "ammo_fg42", "ammo_scopedkar", "ammo_spring", "ammo_sten", "ammo_thompson"};
 
 get_num_ammo(game) {
         if (game == g_valve) return 8;
@@ -22,7 +22,7 @@ get_num_ammo(game) {
         if (game == g_gearbox) return 13;
         if (game == g_dmc) return 7;
         if (game == g_tfc) return 14;
-        if (game == g_dod) return 18;
+        if (game == g_dod) return 23;
         return 0;
 }
 

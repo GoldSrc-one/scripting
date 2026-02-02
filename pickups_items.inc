@@ -3,7 +3,7 @@ new g_cstrike_items[][32] = {"item_kevlar", "item_assaultsuit", "weapon_shield"}
 new g_gearbox_items[][32] = {"item_battery", "item_healthkit", "item_longjump"};
 new g_dmc_items[][32] = {"item_health", "item_armor1", "item_armor2", "item_armor3", "item_artifact_invisibility", "item_artifact_super_damage", "item_artifact_invulnerability"};
 new g_tfc_items[][32] = {"weaponbox"};
-new g_dod_items[][32] = {"ammo_generic_american", "ammo_generic_german"};
+new g_dod_items[][32] = {"ammo_luger", "ammo_colt", "ammo_webley"};
 
 get_num_items(game) {
     if (game == g_valve) return sizeof(g_valve_items);

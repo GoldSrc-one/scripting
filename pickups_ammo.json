@@ -79,6 +79,8 @@
         "weapon_30cal": "ammo_30cal",
         "weapon_bar": "ammo_bar",
         "weapon_bazooka": "ammo_bazooka",
+        "weapon_bren": "ammo_bren",
+        "weapon_enfield": "ammo_enfield",
         "weapon_fg42": "ammo_fg42",
         "weapon_garand": "ammo_garand",
         "weapon_greasegun": "ammo_greasegun",
@@ -89,10 +91,13 @@
         "weapon_mg42": "ammo_mg42",
         "weapon_mp40": "ammo_mp40",
         "weapon_mp44": "ammo_mp44",
+        "weapon_piat": "ammo_piat",
         "weapon_pschreck": "ammo_pschreck",
+        "weapon_scopedenfield": "ammo_enfield",
         "weapon_scopedfg42": "ammo_fg42",
         "weapon_scopedkar": "ammo_scopedkar",
         "weapon_spring": "ammo_spring",
+        "weapon_sten": "ammo_sten",
         "weapon_thompson": "ammo_thompson"
     }
 }
