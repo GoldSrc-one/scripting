@@ -28,17 +28,21 @@ native GetGameName(gameIndex, game[], gameLen);
  * @return               Number between 0 and GetNumGames() - 1, or -1 if not found.
  */
 stock GetGameIndex(const game[]) {
+    new alias[64];
+    copy(alias, 64, game);
+    if(equal(game, "cstrike"))
+        alias = "czero";
+    if(equal(game, "czero"))
+        alias = "cstrike";
+
     new numGames = GetNumGames();
     for(new iGame = 0; iGame < numGames; iGame++) {
         new gameName[64];
         GetGameName(iGame, gameName, 64);
-        if(equal(game, gameName))
+        if(equal(game, gameName) || equal(alias, gameName))
             return iGame;
     }
 
-    if(equal(game, "cstrike")) return GetGameIndex("czero");
-    if(equal(game, "czero")) return GetGameIndex("cstrike");
-    
     return -1;
 }
 
@@ -60,6 +64,13 @@ native GetEntityOwner(entityIndex);
  * @return				 Return value of the callback.
  */
 native GameContext(gameIndex, const callback[]);
+
+/**
+ * Is the current map a deathmatch map?
+ * 
+ * @return				 "true" for deathmatch maps and "false" for teamplay maps.
+ */
+native bool:IsMapDeathmatch();
 
 /**
  * Respawn the player as if new CS round just started.

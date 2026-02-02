@@ -32,7 +32,7 @@ new Float:g_last_wish_ad[33];
 public plugin_init() {
     register_plugin("Equip", "22092025", "GoldSrc.one");
 
-    if(GetEntityOwner(0) != GetGameIndex("cstrike") && GetEntityOwner(0) != GetGameIndex("tfc")) {
+    if(IsMapDeathmatch()) {
         g_active = false;
         return;
     }

@@ -3,6 +3,7 @@
 #include <fakemeta_util>
 
 #include "crossplay"
+#include "crossplay_util"
 
 new g_tfc;
 
@@ -11,21 +12,11 @@ new bool:g_active = true;
 public plugin_init() {
     register_plugin("TFC deathmatch", "0.0", "GoldSrc.one");
 
-    if(GetEntityOwner(0) == GetGameIndex("cstrike")) {
-        new mapname[64];
-        get_mapname(mapname, 64);
-        if(!equal(mapname, "fy_", 3) || equal(mapname, "fy_nuketown")) {
-            g_active = false;
-            return;
-        }
-    }
+    g_active = IsMapDeathmatchOrFy();
+    if(!g_active)
+        return;
 
     g_tfc = GetGameIndex("tfc");
-
-    if(GetEntityOwner(0) == g_tfc){
-        g_active = false;
-        return;
-    }
 
     register_forward(FM_CreateNamedEntity, "CreateNamedEntityPre", 0);
 }

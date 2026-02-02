@@ -14,6 +14,7 @@ new g_tfc = -1;
 new g_difficulties[][] = {"Easy", "Normal", "Hard", "Expert"}
 new Float:g_ratios[MAX_GAMES];
 new g_teams[MAX_GAMES];
+new bool:g_nogoal = false;
 new bool:g_deathmatch = true;
 
 const g_bots_think_task = 1;
@@ -30,9 +31,13 @@ public plugin_init() {
     register_clcmd("say !bots", "bots_menu");
     register_clcmd("bots_ratio", "bots_ratio") 
     register_forward(FM_CreateFakeClient, "CreateFakeClientPre", 0);
+    register_forward(FM_Touch, "TouchPre", 0);
+    register_forward(FM_SetModel, "SetModelPost", 1);
     g_bots_max = register_cvar("bots_max", "8");
     //g_bots_melee = register_cvar("bots_melee", "0");
-    g_bot_difficulty = get_cvar_pointer("bot_difficulty");    
+    g_bot_difficulty = get_cvar_pointer("bot_difficulty");
+    if(!g_bot_difficulty)
+        g_bot_difficulty = register_cvar("bot_difficulty", "Normal");
     
     set_task(1.0, "bots_think", g_bots_think_task, _, _, "b");
     register_clcmd("say", "bots_advertise");
@@ -239,6 +244,9 @@ public bots_menu(player_id) {
     new changeBotTeams[64];
     format(changeBotTeams, 64, "Change bot teams (now: %s)", getTeamsString(g_teams));
     menu_additem(menu, changeBotTeams);
+    new changeBotNoGoal[64];
+    format(changeBotNoGoal, 64, "%s bots picking up bombs and flags", g_nogoal ? "Allow" : "Prevent");
+    menu_additem(menu, changeBotNoGoal);
     /*new melee[64];
     format(melee, 64, "Crowbars vs knives (now: %s)", get_pcvar_num(g_bots_melee) ? "On" : "Off");
     menu_additem(menu, melee);*/
@@ -253,7 +261,7 @@ public bots_menu_handler(player_id, menu, item) {
     if(item == 0) {
         new playerName[64];
         get_user_name(player_id, playerName, 64);
-        new menuTitle[256]
+        new menuTitle[256];
         format(menuTitle, 256, "Kill all the bots? %s has started the vote.", playerName);
         vote_menu(player_id, menuTitle, "kill_all_bots");
     }
@@ -294,10 +302,17 @@ public bots_menu_handler(player_id, menu, item) {
 
         teams_menu(player_id);
     }
+    if(item == 5) {
+        new playerName[64];
+        get_user_name(player_id, playerName, 64);
+        new menuTitle[256];
+        format(menuTitle, 256, "%s bots picking up bombs and flags? %s has started the vote.", g_nogoal ? "Allow" : "Prevent", playerName);
+        vote_menu(player_id, menuTitle, "toggle_nogoal");
+    }
     /*if(item == 3) {
         new playerName[64];
         get_user_name(player_id, playerName, 64);
-        new menuTitle[256]
+        new menuTitle[256];
         format(menuTitle, 256, "%s ^"crowbars vs knives^"? %s has started the vote.", get_pcvar_num(g_bots_melee) ? "Disable" : "Enable", playerName);
         vote_menu(player_id, menuTitle, "toggle_melee");
     }*/
@@ -470,6 +485,11 @@ public change_bot_teams() {
         g_teams[iGame] = g_player_teams[g_votePlayerId][iGame];
 
     ANNOUNCE(g_votePlayerId, "%s has changed the bot teams to: %s", getTeamsString(g_teams));
+}
+
+public toggle_nogoal() {
+    ANNOUNCE(g_votePlayerId, "%s has %s bots picking up bombs and flags.", g_nogoal ? "allowed" : "prevented");
+    g_nogoal = !g_nogoal;
 }
 
 /*public toggle_melee() {
@@ -692,4 +712,57 @@ public notarget_think() {
         else
             set_pev(player_id, pev_flags, pev(player_id, pev_flags) & ~FL_NOTARGET);
     }
+}
+
+public TouchPre(touched, other) {
+    if(!g_nogoal)
+        return FMRES_IGNORED;
+
+    if(!is_user_bot(other))
+        return FMRES_IGNORED;
+
+    new classname[32];
+    pev(touched, pev_classname, classname, 32);
+    if(equal(classname, "weapon_c4") || equal(classname, "item_tfgoal")) {
+        //server_print("Prevented bot touching %s.", classname);
+        return FMRES_SUPERCEDE;
+    }
+
+    new model[32];
+    pev(touched, pev_model, model, 32);
+    if(equal(model, "models/w_backpack.mdl") || equal(model, "models/flag.mdl") || equal(model, "models/keycard.mdl") || equal(model, "models/ball.mdl")) {
+        //server_print("Prevented bot touching %s.", model);
+        return FMRES_SUPERCEDE;
+    }
+
+    return FMRES_IGNORED;
+}
+
+public SetModelPost(entity, const model[]) {
+    if(!g_nogoal)
+        return FMRES_IGNORED;
+
+    new classname[32];
+    pev(entity, pev_classname, classname, 32);
+    if(!equal(classname, "weapon_c4")) {
+        return FMRES_SUPERCEDE;
+    }
+
+    new Float:bombOrigin[3];
+    pev(entity, pev_origin, bombOrigin);
+
+    for(new iPlayer = 1; iPlayer <= get_maxplayers(); iPlayer++) {
+        if(!is_user_bot(iPlayer))
+            continue;
+        
+        new Float:botOrigin[3];
+        pev(iPlayer, pev_origin, botOrigin);
+        if(bombOrigin[0] != botOrigin[0] || bombOrigin[1] != botOrigin[1] || bombOrigin[2] != botOrigin[2])
+            continue;
+        
+        set_pev(entity, pev_flags, pev(entity, pev_flags) | FL_KILLME);
+        //server_print("Prevented %s touching bot.", model);
+        return FMRES_HANDLED;
+    }
+    return FMRES_IGNORED;
 }

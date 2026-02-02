@@ -74,6 +74,26 @@
         "tf_weapon_flamethrower": "item_cells",
         "tf_weapon_tranq": "item_shells",
         "tf_weapon_railgun": "item_nails"
+    },
+    "dod": {
+        "weapon_30cal": "ammo_30cal",
+        "weapon_bar": "ammo_bar",
+        "weapon_bazooka": "ammo_bazooka",
+        "weapon_fg42": "ammo_fg42",
+        "weapon_garand": "ammo_garand",
+        "weapon_greasegun": "ammo_greasegun",
+        "weapon_k43": "ammo_k43",
+        "weapon_kar": "ammo_kar",
+        "weapon_m1carbine": "ammo_m1carbine",
+        "weapon_mg34": "ammo_mg34",
+        "weapon_mg42": "ammo_mg42",
+        "weapon_mp40": "ammo_mp40",
+        "weapon_mp44": "ammo_mp44",
+        "weapon_pschreck": "ammo_pschreck",
+        "weapon_scopedfg42": "ammo_fg42",
+        "weapon_scopedkar": "ammo_scopedkar",
+        "weapon_spring": "ammo_spring",
+        "weapon_thompson": "ammo_thompson"
     }
 }
 

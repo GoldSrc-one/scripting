@@ -84,6 +84,20 @@ enum _:e_tfc_categories {
         e_tfc_engineer,
 }
 
+new g_dod_categories[][32] = {"smgs", "snipers", "grenades", "launchers", "rifles"}
+new g_dod_smgs[][32] = {"weapon_greasegun", "weapon_mp40", "weapon_mp44", "weapon_thompson"}
+new g_dod_snipers[][32] = {"weapon_scopedfg42", "weapon_scopedkar", "weapon_spring"}
+new g_dod_grenades[][32] = {"weapon_handgrenade", "weapon_stickgrenade"}
+new g_dod_launchers[][32] = {"weapon_bazooka", "weapon_pschreck"}
+new g_dod_rifles[][32] = {"weapon_30cal", "weapon_bar", "weapon_fg42", "weapon_garand", "weapon_k43", "weapon_kar", "weapon_m1carbine", "weapon_mg34", "weapon_mg42"}
+enum _:e_dod_categories {
+        e_dod_smgs,
+        e_dod_snipers,
+        e_dod_grenades,
+        e_dod_launchers,
+        e_dod_rifles,
+}
+
 const MAX_CATEGORIES = 9;
 
 get_game_categories(game) {
@@ -92,6 +106,7 @@ get_game_categories(game) {
         if (game == g_gearbox) return e_gearbox_categories;
         if (game == g_dmc) return e_dmc_categories;
         if (game == g_tfc) return e_tfc_categories;
+        if (game == g_dod) return e_dod_categories;
         return 0;
 }
 
@@ -101,6 +116,7 @@ get_game_category(game, category) {
         if (game == g_gearbox) return g_gearbox_categories[category];
         if (game == g_dmc) return g_dmc_categories[category];
         if (game == g_tfc) return g_tfc_categories[category];
+        if (game == g_dod) return g_dod_categories[category];
         new emptyString[32] = "";
         return emptyString;
 }
@@ -139,6 +155,11 @@ get_game_category_items(game, category) {
         if (game == g_tfc && category == e_tfc_pyro) return sizeof g_tfc_pyro;
         if (game == g_tfc && category == e_tfc_spy) return sizeof g_tfc_spy;
         if (game == g_tfc && category == e_tfc_engineer) return sizeof g_tfc_engineer;
+        if (game == g_dod && category == e_dod_smgs) return sizeof g_dod_smgs;
+        if (game == g_dod && category == e_dod_snipers) return sizeof g_dod_snipers;
+        if (game == g_dod && category == e_dod_grenades) return sizeof g_dod_grenades;
+        if (game == g_dod && category == e_dod_launchers) return sizeof g_dod_launchers;
+        if (game == g_dod && category == e_dod_rifles) return sizeof g_dod_rifles;
         return 0;
 }
 
@@ -176,6 +197,11 @@ get_game_category_item(game, category, item) {
         if (game == g_tfc && category == e_tfc_pyro) return g_tfc_pyro[item];
         if (game == g_tfc && category == e_tfc_spy) return g_tfc_spy[item];
         if (game == g_tfc && category == e_tfc_engineer) return g_tfc_engineer[item];
+        if (game == g_dod && category == e_dod_smgs) return g_dod_smgs[item];
+        if (game == g_dod && category == e_dod_snipers) return g_dod_snipers[item];
+        if (game == g_dod && category == e_dod_grenades) return g_dod_grenades[item];
+        if (game == g_dod && category == e_dod_launchers) return g_dod_launchers[item];
+        if (game == g_dod && category == e_dod_rifles) return g_dod_rifles[item];
         new emptyString[32] = "";
         return emptyString;
 }

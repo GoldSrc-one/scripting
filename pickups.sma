@@ -9,6 +9,7 @@ new g_gearbox;
 new g_dmc;
 new g_cstrike;
 new g_tfc;
+new g_dod;
 
 #include "pickups_gen"
 #include "pickups_ammo_gen"
@@ -77,6 +78,7 @@ public plugin_init() {
         g_ammo_offsets[g_cstrike] = 376;
 
     g_tfc = GetGameIndex("tfc");
+    g_dod = GetGameIndex("dod");
 
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         g_game = iGame;
@@ -101,7 +103,7 @@ PrecacheItem(const classname[]) {
 
 GetTfcModel(const classname[]) {
     new model[64];
-
+    
     if(equal(classname, "tf_weapon_shotgun")) copy(model, 64, "models/p_smallshotgun.mdl");
     if(equal(classname, "tf_weapon_ng")) copy(model, 64, "models/p_nailgun.mdl");
     if(equal(classname, "tf_weapon_sniperrifle")) copy(model, 64, "models/p_sniper.mdl");
@@ -124,13 +126,16 @@ GetTfcModel(const classname[]) {
 }
 
 public PrecacheItems() {
-    if(g_game == g_dmc) {
+    if(g_game == g_dmc || g_game == g_tfc) {
         for(new iCategory = 0; iCategory < get_game_categories(g_game); iCategory++)
             for(new iItem = 0; iItem < get_game_category_items(g_game, iCategory); iItem++)
                 PrecacheItem(get_game_category_item(g_game, iCategory, iItem));
     
         for(new iAmmo = 0; iAmmo < get_num_ammo(g_game); iAmmo++)
             PrecacheItem(get_ammo_classname(g_game, iAmmo));
+    }
+    if(g_game == g_tfc) {
+        engfunc(EngFunc_PrecacheModel, "valve/models/w_gaussammo.mdl");
     }
         
     for(new iItem = 0; iItem < get_num_items(g_game); iItem++)
@@ -745,12 +750,16 @@ PrepareAmmoPickup(entity, const classname[]) {
             }
         }
 
+        new numAmmo = get_num_ammo(iGame);
+        if(!numAmmo)
+            continue;
+
         //start with random ammo index
-        new ammoIndex = random(get_num_ammo(iGame));
+        new ammoIndex = random(numAmmo);
 
         //use ammo for nearest weapon if found
         if(nearestWeapon) {
-            for(new iAmmo = 0; iAmmo < get_num_ammo(iGame); iAmmo++) {
+            for(new iAmmo = 0; iAmmo < numAmmo; iAmmo++) {
                 if(equal(g_pickup_classname[iGame][nearestWeapon], get_ammo_weapon(iGame, iAmmo))) {
                     ammoIndex = iAmmo;
                     break;
@@ -759,7 +768,7 @@ PrepareAmmoPickup(entity, const classname[]) {
         }
 
         //use the exactly same ammo if available
-        for(new iAmmo = 0; iAmmo < get_num_ammo(iGame); iAmmo++) {
+        for(new iAmmo = 0; iAmmo < numAmmo; iAmmo++) {
             if(equal(classname, get_ammo_classname(iGame, iAmmo))) {
                 ammoIndex = iAmmo;
                 break;

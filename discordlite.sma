@@ -52,7 +52,7 @@ writeout(const game[], const name[], const action[], const text[] = "") {
 }
 
 public client_connect(player_id) {
-	if(is_user_bot(player_id))
+	if(is_user_bot(player_id) || is_user_hltv(player_id))
 		return PLUGIN_CONTINUE;
 	
 	new game[64];
@@ -66,7 +66,7 @@ public client_connect(player_id) {
 }
 
 public client_disconnect(player_id) {
-	if(is_user_bot(player_id))
+	if(is_user_bot(player_id) || is_user_hltv(player_id))
 		return PLUGIN_CONTINUE;
 		
 	new game[64];
