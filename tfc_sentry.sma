@@ -60,6 +60,10 @@ public FindEntityByStringPre(entity, const key[], const value[]) {
             break;
         } while(entity);
 
+        //make it easier for bots from other games
+        set_pev(g_sentry, pev_team, get_pdata_int(g_sentry, 74));
+        set_pev(g_sentry, pev_owner, get_pdata_ent(g_sentry, 332));
+
         forward_return(FMV_CELL, entity);
         return FMRES_SUPERCEDE;
     }
