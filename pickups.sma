@@ -178,6 +178,12 @@ GetModelIndexFromClassname(const classname[]) {
     if(!entity)
         return 0;
 
+    if(g_game == g_dod){
+        new dod_category, dod_item;
+        if(find_weapon(g_dod, classname, dod_category, dod_item) && dod_category == e_dod_snipers)
+            set_pdata_int(entity, 115, get_pdata_int(entity, 115) | 1);
+    }
+
     fm_DispatchSpawn(entity);
     new model[64];
     pev(entity, pev_model, model, 64);
@@ -320,6 +326,12 @@ fm_give_item2(index, const item[]) {
     if (!pev_valid(ent))
         return 0;
 
+    if(GetEntityOwner(g_equip_player) == g_dod) {
+        new dod_category, dod_item;
+        if(find_weapon(g_dod, item, dod_category, dod_item) && dod_category == e_dod_snipers)
+            set_pdata_int(ent, 115, get_pdata_int(ent, 115) | 1);
+    }
+
     new Float:origin[3];
     pev(index, pev_origin, origin);
     set_pev(ent, pev_origin, origin);
@@ -362,9 +374,9 @@ bool:give_item2(const classname[]) {
     if(oldHealth != newHealth)
         delete = true;
 
-    if(playerOwner == g_dmc && item > 0) {
+    if(playerOwner == g_dmc && item > 0)
         fm_remove_entity(item);
-    }
+
     return delete;
 }
 
@@ -1102,6 +1114,12 @@ public GiveAmmo(){
         given |= give_item_times("item_rockets", (g_give_rockets + 3) / 5);
         given |= give_item_times("item_cells", (g_give_cells + 3) / 6);
     }
+    if(playerOwner == g_dod) {
+        for(new iAmmo = 0; iAmmo < get_num_ammo(g_dod); iAmmo++)
+            given |= give_item_times(get_ammo_classname(g_dod, iAmmo), 1);
+        for(new iItem = 0; iItem < get_num_items(g_dod); iItem++)
+            given |= give_item_times(get_item(g_dod, iItem), 1);
+    }
 
     return given ? PLUGIN_HANDLED : PLUGIN_CONTINUE;
 }
@@ -1156,6 +1174,10 @@ public GiveGrenades() {
     }
     if(playerOwner == g_dmc)
         return;
+    if(playerOwner == g_dod) {
+        give_item_times(pev(g_equip_player, pev_team) == 2 ? "weapon_stickgrenade" : "weapon_handgrenade", g_give_grenades1 + g_give_grenades2);
+        return;
+    }
 }
 
 new bool:g_britSleeve[33] = {};
