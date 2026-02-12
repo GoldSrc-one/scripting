@@ -11,6 +11,7 @@ new g_gearbox = -1;
 new g_dmc = -1;
 new g_cstrike = -1;
 new g_tfc = -1;
+new g_dod = -1;
 new g_difficulties[][] = {"Easy", "Normal", "Hard", "Expert"}
 new Float:g_ratios[MAX_GAMES];
 new g_teams[MAX_GAMES];
@@ -44,7 +45,7 @@ public plugin_init() {
 
     g_valve = GetGameIndex("valve");
     if(g_valve != -1)
-        g_ratios[g_valve] = random_float(20.0, 30.0);
+        g_ratios[g_valve] = random_float(15.0, 25.0);
 
     g_cstrike = GetGameIndex("cstrike");
     if(g_cstrike != -1)
@@ -52,13 +53,17 @@ public plugin_init() {
 
     g_gearbox = GetGameIndex("gearbox");
     if(g_gearbox != -1)
-        g_ratios[g_gearbox] = random_float(20.0, 30.0);
+        g_ratios[g_gearbox] = random_float(15.0, 25.0);
         
     g_dmc = GetGameIndex("dmc");
 
     g_tfc = GetGameIndex("tfc");
     if(g_tfc != -1)
         g_ratios[g_tfc] = random_float(30.0, 40.0);
+
+    g_dod = GetGameIndex("dod");
+    if(g_dod != -1)
+        g_ratios[g_dod] = random_float(30.0, 40.0);
 
     new Float:ratioSum = 0.0;
     for(new iGame = 0; iGame < MAX_GAMES; iGame++)
@@ -68,13 +73,15 @@ public plugin_init() {
 
     set_task(0.1, "notarget_think", g_notarget_think_task, _, _, "b");
 
+    g_deathmatch = IsMapDeathmatch();
+
     if(GetEntityOwner(0) == g_cstrike) {
-        g_deathmatch = false;
         g_teamNames[1] = "CT";
         g_teamNames[2] = "T";
     }
-    if(GetEntityOwner(0) == g_tfc) {
-        g_deathmatch = false;
+    if(GetEntityOwner(0) == g_dod) {
+        g_teamNames[1] = "Allies";
+        g_teamNames[2] = "Axis";
     }
 }
 
@@ -200,6 +207,7 @@ bool:getGameAbbr(iGame, gameAbbr[16]) {
     if(iGame == g_gearbox) { gameAbbr = "OP4"; return true; }
     if(iGame == g_cstrike) { gameAbbr = "CS"; return true; }
     if(iGame == g_tfc) { gameAbbr = "TFC"; return true; }
+    if(iGame == g_dod) { gameAbbr = "DOD"; return true; }
     return false;
 }
 
@@ -210,7 +218,7 @@ getRatiosString(const Float:ratios[]) {
     for(new iGame = 0; iGame < MAX_GAMES; iGame++) {
         new gameAbbr[16];
         if(getGameAbbr(iGame, gameAbbr))
-            pos += format(ratiosString[pos], 64, "%s:%.f%% ", gameAbbr, ratios[iGame]);
+            pos += format(ratiosString[pos], 64, "%s:%.0f%% ", gameAbbr, ratios[iGame]);
     }
 
     return ratiosString;
@@ -375,7 +383,7 @@ ratios_menu(player_id) {
         new gameAbbr[16];
         if(getGameAbbr(iGame, gameAbbr)) {
             new gameRatio[32];
-            format(gameRatio, 32, "%s (%.f %%)", gameAbbr, g_player_ratios[player_id][iGame]);
+            format(gameRatio, 32, "%s (%.0f %%)", gameAbbr, g_player_ratios[player_id][iGame]);
             menu_additem(menu, gameRatio);
         }
     }
@@ -556,6 +564,9 @@ public bots_think() {
         server_cmd("bot ^"botskill_lower %d^"", 5 - difficulty);
         server_cmd("bot ^"botskill_upper %d^"", 4 - difficulty);
 
+        server_cmd("m_bot set_botskill %d", 4 - difficulty);
+        server_cmd("m_bot set_aimskill %d", 4 - difficulty);
+
         g_last_difficulty = difficulty;
         g_evict = true;
     }
@@ -621,11 +632,16 @@ public bots_think() {
             if(addGame == g_cstrike) {
                 new csTeamAdd[][] = {"bot_add", "bot_add_ct", "bot_add_t"};
                 server_cmd(csTeamAdd[g_teams[addGame]]);
-            } else if(addGame == g_tfc) {
-                server_cmd("bot ^"addbot %d^"", g_teams[addGame]);
-            } else {
+            }
+            if(addGame == g_valve || addGame == g_gearbox) {
                 new jkTeamAdd[][] = {"addbot UNASSIGNED", "addbot BLUE", "addbot RED"};
                 jk_botti_cmd(addGame, jkTeamAdd[g_teams[addGame]]);
+            }
+            if(addGame == g_tfc) {
+                server_cmd("bot ^"addbot %d^"", g_teams[addGame]);
+            }
+            if(addGame == g_dod) {
+                server_cmd("m_bot addmarine %d", g_teams[addGame]);
             }
         }
     }
