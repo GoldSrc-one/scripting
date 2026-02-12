@@ -7,8 +7,8 @@
 new g_dod = -1;
 
 const Float:probe_distance = 24.0;
-const Float:probe_z_start = 20.0;
-const Float:probe_z_end = 4.0;
+const Float:probe_z_start = 20.1;
+const Float:probe_z_end = 3.9;
 const Float:min_z_normal = 0.9;
 const Float:max_air_angle = 45.0;
 
