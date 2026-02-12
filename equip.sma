@@ -390,7 +390,7 @@ public equip_dmc() {
 
 public equip_defuser() {
     new bools = get_pdata_int(g_player_id, 193);
-    bools |= 1 << 12; //m_bHasDefuser
+    bools |= 1 << 16; //m_bHasDefuser
     set_pdata_int(g_player_id, 193, bools);
 }
 
