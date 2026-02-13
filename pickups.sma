@@ -338,7 +338,8 @@ fm_give_item2(index, const item[]) {
     set_pev(ent, pev_spawnflags, pev(ent, pev_spawnflags) | SF_NORESPAWN);
     dllfunc(DLLFunc_Spawn, ent);
 
-    set_pev(ent, pev_flags, pev(ent, pev_flags) | FL_ONGROUND);
+    if(GetEntityOwner(g_equip_player) == g_dod)
+        set_pev(ent, pev_flags, pev(ent, pev_flags) | FL_ONGROUND);
 
     new save = pev(ent, pev_solid);
     dllfunc(DLLFunc_Touch, ent, index);
