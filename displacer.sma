@@ -1,5 +1,6 @@
 #include <amxmodx>
 #include <fakemeta>
+#include <fakemeta_util>
 #include "crossplay"
 
 public plugin_init() {
@@ -11,6 +12,15 @@ public plugin_init() {
     register_forward(FM_Touch, "TouchPost", 1);
     
     register_forward(FM_FindEntityByString, "FindEntityByStringPre", 0);
+    register_forward(FM_FindEntityInSphere, "FindEntityInSpherePre", 0);
+
+    GameContext(GetEntityOwner(0), "CreateTarget");
+}
+
+new g_target;
+public CreateTarget() {
+    g_target = fm_create_entity("info_target");
+    set_pev(g_target, pev_classname, "displacer_target");
 }
 
 new Float:g_lastSpawn[33][3];
@@ -19,20 +29,18 @@ public PostPlayerSpawn(player_id) {
 }
 
 new bool:g_displacer = false;
-new g_player_id = 0;
 public ThinkPre(entity) {
     new classname[24]
     pev(entity, pev_classname, classname, 24);
     if(equal(classname, "weapon_displacer")) {
         g_displacer = true;
-        g_player_id = pev(entity, pev_owner);
+        set_pev(g_target, pev_origin, g_lastSpawn[pev(entity, pev_owner)]);
     }
     return FMRES_HANDLED;
 }
 
 public ThinkPost(entity) {
     g_displacer = false;
-    g_player_id = 0;
     return FMRES_HANDLED;
 }
 
@@ -46,20 +54,28 @@ public TouchPre(touched, other) {
         return FMRES_IGNORED;
 
     g_displacer = true;
-    g_player_id = other;
+    set_pev(g_target, pev_origin, g_lastSpawn[other]);
     return FMRES_HANDLED;
 }
 
 public TouchPost(touched, other) {
     g_displacer = false;
-    g_player_id = 0;
     return FMRES_HANDLED;
 }
 
 public FindEntityByStringPre(entity, const key[], const value[]) {
     if(g_displacer && equal(key, "classname") && equal(value, "info_player_deathmatch")) {
-        new newEntity = engfunc(EngFunc_FindEntityInSphere, entity, g_lastSpawn[g_player_id], 0.0);
-        forward_return(FMV_CELL, newEntity);
+        forward_return(FMV_CELL, g_target);
+        return FMRES_SUPERCEDE;
+    }
+    return FMRES_HANDLED;
+}
+
+public FindEntityInSpherePre(entity, const Float:origin[], Float:radius) {
+    if(g_displacer && radius == 128.0) {
+        //reduce the spawn kill radius
+        entity = engfunc(EngFunc_FindEntityInSphere, entity, origin, 37.0);
+        forward_return(FMV_CELL, entity);
         return FMRES_SUPERCEDE;
     }
     return FMRES_HANDLED;
