@@ -18,9 +18,12 @@ new g_czCapFlags[2][6];
 
 new g_player_goals[33];
 
-public plugin_init() {
+public plugin_precache() {
     register_plugin("Bot goal", "0.0", "GoldSrc.one");
+    register_forward(FM_KeyValue, "KeyValuePre");
+}
 
+public plugin_init() {
     new mapname[64];
     get_mapname(mapname, 64);
     if(equal(mapname, "crossfire")) {
@@ -486,6 +489,38 @@ public goal_think() {
         else if(g_player_goals[iPlayer]) {
             fm_remove_entity(g_player_goals[iPlayer]);
             g_player_goals[iPlayer] = 0;
+        }
+    }
+}
+
+public KeyValuePre(entity, kvd) {
+    new key[32];
+    get_kvd(kvd, KV_KeyName, key, 32);
+    if(!equal(key, "classname"))
+        return FMRES_IGNORED;
+
+    new value[32];
+    get_kvd(kvd, KV_Value, value, 32);
+    if(!equal(value, "bot_goal"))
+        return FMRES_IGNORED;
+
+    set_kvd(kvd, KV_Value, "info_target");
+    set_task(0.0, "HandleBotGoalEntity", entity);
+    return FMRES_HANDLED;
+}
+
+public HandleBotGoalEntity(entity) {
+    set_pev(entity, pev_classname, "bot_goal");
+    ClassnameChanged(entity);
+
+    new targetString[64];
+    pev(entity, pev_target, targetString, 64);
+    server_print("map bot_goal %d target %s", entity, targetString);
+    if(targetString[0]) {
+        new target = engfunc(EngFunc_FindEntityByString, 0, "targetname", targetString);
+        if(target) {
+            set_pev(entity, pev_aiment, entity);
+            set_pev(entity, pev_button, pev(entity, pev_button) | IN_USE);
         }
     }
 }
