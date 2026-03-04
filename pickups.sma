@@ -525,7 +525,7 @@ public DeleteWeaponbox() {
         }
     }
 
-    if(equal(classname, "weaponbox") || equal(classname, "weapon_shield") || equal(classname, "tf_ammobox")) {
+    if(equal(classname, "weaponbox") || equal(classname, "weapon_shield") || equal(classname, "tf_ammobox") || equal(classname, "ammo_generic_", 13)) {
         //delete the original weaponbox by mere thought
         fm_call_think(g_equip_item);
     }
@@ -972,7 +972,7 @@ public CreateNamedEntityPost(iClassname) {
         if(equal(classname, "weaponbox")) {
             set_task(0.0, "OnWeaponboxCreate", entity);
         }
-        if(equal(classname, "weapon_shield")) {
+        if(equal(classname, "weapon_shield") || equal(classname, "ammo_generic_", 13)) {
             //server_print("weapon_shield");
             PreparePickup(entity, classname);
         }
