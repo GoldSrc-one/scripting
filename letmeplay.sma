@@ -4,7 +4,7 @@
 #include "crossplay"
 
 public plugin_init() {
-    register_plugin("LetMePlay", "0.0", "GoldSrc.one");
+    register_plugin("LetMePlay", __DATE__, "GoldSrc.one");
     if(GetEntityOwner(0) != GetGameIndex("cstrike"))
         return;
 

@@ -10,7 +10,7 @@ new g_tfc;
 new bool:g_active = true;
 
 public plugin_init() {
-    register_plugin("TFC deathmatch", "0.0", "GoldSrc.one");
+    register_plugin("TFC deathmatch", __DATE__, "GoldSrc.one");
 
     g_active = IsMapDeathmatchOrFy();
     if(!g_active)

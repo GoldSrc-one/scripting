@@ -7,7 +7,7 @@ new g_gibs[maxGibs];
 new g_gibIndex = 0;
 
 public plugin_init() {
-    register_plugin("Gib limiter", "0.0", "GoldSrc.one");
+    register_plugin("Gib limiter", __DATE__, "GoldSrc.one");
 
     register_forward(FM_SetModel, "SetModelPost", 1);
 }

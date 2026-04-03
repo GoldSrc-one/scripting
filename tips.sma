@@ -7,7 +7,7 @@ new g_tipCounts[MAX_GAMES];
 new g_tips[MAX_GAMES][MAX_TIPS][MAX_TIP_LEN];
 
 public plugin_init() {
-    register_plugin("Tips", "0.0", "GoldSrc.one");
+    register_plugin("Tips", __DATE__, "GoldSrc.one");
 
     new f = fopen("tips.txt", "rt");
     if(!f)

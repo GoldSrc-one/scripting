@@ -14,7 +14,7 @@ new g_numMonsters;
 new g_monsters[maxMonsters];
 
 public plugin_init() {
-    register_plugin("fy_pool_nightmare", "0.0", "GoldSrc.one");
+    register_plugin("fy_pool_nightmare", __DATE__, "GoldSrc.one");
 
     g_oldAllowMonsters = get_cvar_num("mp_allowmonsters");
 

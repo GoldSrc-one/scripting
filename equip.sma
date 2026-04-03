@@ -30,7 +30,7 @@ new Float:g_wish_ad_interval = 120.0;
 new Float:g_last_wish_ad[33];
 
 public plugin_init() {
-    register_plugin("Equip", "22092025", "GoldSrc.one");
+    register_plugin("Equip", __DATE__, "GoldSrc.one");
 
     if(IsMapDeathmatch()) {
         g_active = false;

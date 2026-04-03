@@ -4,7 +4,7 @@
 #include "crossplay"
 
 public plugin_init() {
-    register_plugin("CZero PlayerModels", "0.0", "GoldSrc.one");
+    register_plugin("CZero PlayerModels", __DATE__, "GoldSrc.one");
 
     RegisterHookChain(RG_CBasePlayer_SetClientUserInfoModel, "CBasePlayer_SetClientUserInfoModel");
 }

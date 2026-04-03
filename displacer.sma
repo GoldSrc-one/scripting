@@ -4,7 +4,7 @@
 #include "crossplay"
 
 public plugin_init() {
-    register_plugin("Displacer", "0.0", "GoldSrc.one");
+    register_plugin("Displacer", __DATE__, "GoldSrc.one");
 
     register_forward(FM_Think, "ThinkPre", 0);
     register_forward(FM_Think, "ThinkPost", 1);

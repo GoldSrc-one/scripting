@@ -2,7 +2,7 @@
 #include "crossplay"
 
 public plugin_init() {
-	register_plugin("DiscordLite", "0.0", "GoldSrc.one");
+	register_plugin("DiscordLite", __DATE__, "GoldSrc.one");
 	register_concmd("say", "_dl_sayhandler");
 	set_task(0.5, "readin", _, _, _, "b");
 	set_task(10.0, "writestatus", _, _, _, "b");

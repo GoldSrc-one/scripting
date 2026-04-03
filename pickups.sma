@@ -49,7 +49,7 @@ new g_tfc_classname[maxTfcClasses][maxEntities][32];
 new g_ammo_offsets[MAX_GAMES];
 
 public plugin_precache() {
-    register_plugin("Pickups", "0.0", "GoldSrc.one");
+    register_plugin("Pickups", __DATE__, "GoldSrc.one");
     register_forward(FM_Spawn, "SpawnPost", 1);
 }
 

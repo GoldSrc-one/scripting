@@ -8,7 +8,7 @@ new g_tfc;
 new g_cstrike;
 
 public plugin_init() {
-    register_plugin("TFC sentry", "0.0", "GoldSrc.one");
+    register_plugin("TFC sentry", __DATE__, "GoldSrc.one");
 
     g_tfc = GetGameIndex("tfc");
     if(g_tfc == -1)

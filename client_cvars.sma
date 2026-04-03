@@ -1,7 +1,7 @@
 #include <amxmodx>
 
 public plugin_init() {
-    register_plugin("Client CVARs", "0.0", "GoldSrc.one");
+    register_plugin("Client CVARs", __DATE__, "GoldSrc.one");
 }
 
 public expect_client_cvar(player_id, const cvar[], const value[]) {

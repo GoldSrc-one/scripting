@@ -13,7 +13,7 @@ const Float:min_z_normal = 0.9;
 const Float:max_air_angle = 45.0;
 
 public plugin_init() {
-    register_plugin("dod_trigger_sandbag", "0.0", "GoldSrc.one");
+    register_plugin("dod_trigger_sandbag", __DATE__, "GoldSrc.one");
 
     g_dod = GetGameIndex("dod");
     if(g_dod == -1 || GetEntityOwner(0) == g_dod)

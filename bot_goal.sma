@@ -19,7 +19,7 @@ new g_czCapFlags[2][6];
 new g_player_goals[33];
 
 public plugin_precache() {
-    register_plugin("Bot goal", "0.0", "GoldSrc.one");
+    register_plugin("Bot goal", __DATE__, "GoldSrc.one");
     register_forward(FM_KeyValue, "KeyValuePre");
 }
 
