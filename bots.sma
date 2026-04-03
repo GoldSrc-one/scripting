@@ -25,20 +25,25 @@ const g_notarget_think_task = 1;
 
 new g_teamNames[3][8] = {"ANY", "BLUE", "RED"};
 
-public plugin_init() {
-    register_plugin("Bots", "0.0", "GoldSrc.one");
-    register_clcmd("say bots", "bots_menu");
-    register_clcmd("say /bots", "bots_menu");
-    register_clcmd("say !bots", "bots_menu");
-    register_clcmd("bots_ratio", "bots_ratio") 
-    register_forward(FM_CreateFakeClient, "CreateFakeClientPre", 0);
-    register_forward(FM_Touch, "TouchPre", 0);
-    register_forward(FM_SetModel, "SetModelPost", 1);
+public plugin_precache() {
+    register_plugin("Bots", __DATE__, "GoldSrc.one");
+
     g_bots_max = register_cvar("bots_max", "8");
     //g_bots_melee = register_cvar("bots_melee", "0");
     g_bot_difficulty = get_cvar_pointer("bot_difficulty");
     if(!g_bot_difficulty)
         g_bot_difficulty = register_cvar("bot_difficulty", "Normal");
+}
+
+public plugin_init() {
+    register_clcmd("say bots", "bots_menu");
+    register_clcmd("say /bots", "bots_menu");
+    register_clcmd("say !bots", "bots_menu");
+    register_clcmd("bots_ratio", "bots_ratio");
+    register_forward(FM_CreateFakeClient, "CreateFakeClientPre", 0);
+    register_forward(FM_SetClientKeyValue, "SetClientKeyValuePre", 0);
+    register_forward(FM_Touch, "TouchPre", 0);
+    register_forward(FM_SetModel, "SetModelPost", 1);
     
     set_task(1.0, "bots_think", g_bots_think_task, _, _, "b");
     register_clcmd("say", "bots_advertise");
@@ -85,11 +90,24 @@ public plugin_init() {
     }
 }
 
-public CreateFakeClientPre(netname[]) {
+public CreateFakeClientPre(const netname[]) {
+    if(equal(netname, "[BOT] ", 6))
+        return FMRES_IGNORED;
+
     new botname[64];
     format(botname, 64, "[BOT] %s", netname);
     new client = engfunc(EngFunc_CreateFakeClient, botname);
     forward_return(FMV_CELL, client);
+    return FMRES_SUPERCEDE;
+}
+
+public SetClientKeyValue(clientIndex, const infobuffer[], const key[], const value[]) {
+    if(!(pev(clientIndex, pev_flags) & FL_FAKECLIENT) || !equal(key, "name") || equal(value, "[BOT] ", 6))
+        return FMRES_IGNORED;
+    
+    new botname[64];
+    format(botname, 64, "[BOT] %s", value);
+    engfunc(EngFunc_SetClientKeyValue, infobuffer, key, botname);
     return FMRES_SUPERCEDE;
 }
 
@@ -692,7 +710,7 @@ public bots_advertise(player_id) {
 
     new saytext[256];
     read_args(saytext, 255);
-    if(strfind(saytext, "bot", 1) == -1)
+    if(strfind(saytext, "bot", true) == -1)
         return PLUGIN_CONTINUE;
 
     g_last_advert = get_gametime();
