@@ -5,6 +5,7 @@
 
 new g_tfc = -1;
 new g_cstrike = -1;
+new g_dod = -1;
 new g_map_owner = -1;
 
 new bool:g_as_map = false;
@@ -17,25 +18,41 @@ new g_czCarryFlags[2][3];
 new g_czCapFlags[2][6];
 
 new g_player_goals[33];
+const MAX_GLOBAL_GOALS = 64;
+new g_global_goals[MAX_GLOBAL_GOALS];
+new bool:g_goal_watcher[33];
+new g_beam_sprite;
 
 public plugin_precache() {
     register_plugin("Bot goal", __DATE__, "GoldSrc.one");
     register_forward(FM_KeyValue, "KeyValuePre");
+
+    register_clcmd("say goal", "watch_goal");
+    register_clcmd("say /goal", "watch_goal");
+    register_clcmd("say !goal", "watch_goal");
+    g_beam_sprite = precache_model("sprites/lgtning.spr");  
 }
 
+const g_goal_think_task = 2000;
+const g_goal_watch_task = 3000;
+const Float:g_goal_watch_interval = 0.5;
+
 public plugin_init() {
+    set_task(g_goal_watch_interval, "goal_watch_think", g_goal_watch_task, _, _, "b");
+
     new mapname[64];
     get_mapname(mapname, 64);
     if(equal(mapname, "crossfire")) {
-        set_task(5.0, "crossfire_think", _, _, _, "b");
+        set_task(5.0, "crossfire_think", g_goal_think_task, _, _, "b");
     }
     
     g_tfc = GetGameIndex("tfc");
     g_cstrike = GetGameIndex("cstrike");
+    g_dod = GetGameIndex("dod");
     g_map_owner = GetEntityOwner(0);
 
-    if(g_map_owner == g_cstrike || g_map_owner == g_tfc)
-        set_task(1.0, "goal_think", _, _, _, "b");
+    if(g_map_owner == g_cstrike || g_map_owner == g_tfc || g_map_owner == g_dod)
+        set_task(1.0, "goal_think", g_goal_think_task, _, _, "b");
 
     if(g_map_owner == g_cstrike) {
         g_as_map = equal(mapname, "as_", 3) != 0;
@@ -43,14 +60,7 @@ public plugin_init() {
         g_de_map = equal(mapname, "de_", 3) != 0;
     }
 
-    if(g_map_owner == g_tfc) {
-        if(equal(mapname, "avanti")) {
-            new cap4;
-            cap4 = engfunc(EngFunc_FindEntityByString, cap4, "target", "cap4");
-            if(cap4)
-                set_pev(cap4, pev_netname, "Capture Point 4");
-        }
-        
+    if(g_map_owner == g_tfc) {        
         if(equal(mapname, "cz2")) {
             g_cz2 = true;
 
@@ -123,6 +133,7 @@ public crossfire_think() {
 
     if(active && !g_crossfire_goal) {
         g_crossfire_goal = CreateGoal();
+        g_global_goals[0] = g_crossfire_goal;
         new Float:origin[3];
         GetEntityCenter(button, origin);
         set_pev(g_crossfire_goal, pev_origin, origin);
@@ -130,6 +141,7 @@ public crossfire_think() {
     if(!active && g_crossfire_goal) {
         fm_remove_entity(g_crossfire_goal);
         g_crossfire_goal = 0;
+        g_global_goals[0] = 0;
     }
 }
 
@@ -451,6 +463,103 @@ bool:cstrike_find_goal(iPlayer, Float:origin[3]) {
     }
 }
 
+
+new bool:g_dod_players_have_objects[33];
+public PlayersHaveObjects() {
+    for(new iPlayer = 1; iPlayer <= get_maxplayers(); iPlayer++) {
+        g_dod_players_have_objects[iPlayer] = false;
+        if(!is_user_connected(iPlayer) || !pev_valid(iPlayer))
+            continue;
+        
+        g_dod_players_have_objects[iPlayer] = get_pdata_int(iPlayer, 375) != 0;
+    }
+}
+
+dod_find_object(const Float:playerOrigin[3], playerTeam) {
+    new Float:minDist = 99999.9;
+    new closestObject = 0;
+
+    new ent = 0;
+    while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "dod_object"))) {
+        new m_iTeam = get_pdata_int(ent, 85);
+        if(m_iTeam != playerTeam)
+            continue;
+
+        new Float:objectOrigin[3];
+        pev(ent, pev_origin, objectOrigin);
+        new Float:dist = get_distance_f(playerOrigin, objectOrigin);
+        if(dist < minDist) {
+            minDist = dist;
+            closestObject = ent;
+        }
+    }
+    return closestObject;
+}
+
+new gPlayer;
+new gDodClosestPoint;
+public FindDodClosestPoint() {
+    new Float:playerOrigin[3];
+    pev(gPlayer, pev_origin, playerOrigin);
+    new playerTeam = pev(gPlayer, pev_team);
+    
+    new Float:minDist = 99999.9;
+    new closestPoint = 0;
+
+    new ent = 0;
+    while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "dod_control_point"))) {
+        new m_iTeam = get_pdata_int(ent, 90);
+        if(m_iTeam == playerTeam)
+            continue;
+
+        new Float:pointOrigin[3];
+        pev(ent, pev_origin, pointOrigin);
+        new Float:dist = get_distance_f(playerOrigin, pointOrigin);
+        if(dist < minDist) {
+            minDist = dist;
+            closestPoint = ent;
+        }
+    }
+    
+    while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "dod_capture_area"))) {
+        new m_nOwningTeam = get_pdata_int(ent, 126);
+        if(m_nOwningTeam == playerTeam)
+            continue;
+
+        new m_bTeamsCanCap = get_pdata_int(ent, 133);
+        new myTeamCanCap = (m_bTeamsCanCap >> (8 * (playerTeam - 1))) & 0xFF;
+        if(!myTeamCanCap)
+            continue;
+
+        new areaOrObject = ent;
+        new m_bRequiresObject = (get_pdata_int(ent, 714) & 0xFF);
+        if(m_bRequiresObject && !g_dod_players_have_objects[gPlayer])
+            areaOrObject = dod_find_object(playerOrigin, playerTeam);
+            
+        new Float:center[3];
+        GetEntityCenter(areaOrObject, center);
+        new Float:dist = get_distance_f(playerOrigin, center);
+        if(dist < minDist) {
+            minDist = dist;
+            closestPoint = areaOrObject;
+        }
+    }
+
+    gDodClosestPoint = closestPoint;
+}
+
+bool:dod_find_goal(iPlayer, Float:origin[3]) {
+    gDodClosestPoint = 0;
+    gPlayer = iPlayer;
+    GameContext(g_dod, "FindDodClosestPoint");
+    if(gDodClosestPoint) {
+        GetEntityCenter(gDodClosestPoint, origin);
+        return true;
+    } else{
+        return false;
+    }
+}
+
 public goal_think() {
     if(g_cs_map) {
         GameContext(g_cstrike, "FindHostages");
@@ -459,8 +568,13 @@ public goal_think() {
             if(is_user_alive(iPlayer) && pev(iPlayer, pev_team) == 1)
                 g_ct_alive++;
     }
+
+    if(g_map_owner == g_dod)
+        GameContext(g_dod, "PlayersHaveObjects");
+
     for(new iPlayer = 1; iPlayer <= get_maxplayers(); iPlayer++) {
-        if(!is_user_connected(iPlayer) || !is_user_bot(iPlayer) || GetEntityOwner(iPlayer) == g_map_owner) {
+        new bool:should_have_goal = is_user_connected(iPlayer) && ((is_user_bot(iPlayer) && GetEntityOwner(iPlayer) != g_map_owner) || g_goal_watcher[iPlayer]);
+        if(!should_have_goal) {
             if(g_player_goals[iPlayer]) {
                 fm_remove_entity(g_player_goals[iPlayer]);
                 g_player_goals[iPlayer] = 0;
@@ -468,7 +582,6 @@ public goal_think() {
             continue;
         }
 
-        
         if(g_player_goals[iPlayer])
             set_pev(g_player_goals[iPlayer], pev_button, 0);
 
@@ -478,6 +591,8 @@ public goal_think() {
             goalFound = cstrike_find_goal(iPlayer, origin);
         if(g_map_owner == g_tfc)
             goalFound = tfc_find_goal(iPlayer, origin);
+        if(g_map_owner == g_dod)
+            goalFound = dod_find_goal(iPlayer, origin);
 
         if(goalFound) {
             if(!g_player_goals[iPlayer]) {
@@ -515,7 +630,7 @@ public HandleBotGoalEntity(entity) {
 
     new targetString[64];
     pev(entity, pev_target, targetString, 64);
-    server_print("map bot_goal %d target %s", entity, targetString);
+    //server_print("map bot_goal %d target %s", entity, targetString);
     if(targetString[0]) {
         new target = engfunc(EngFunc_FindEntityByString, 0, "targetname", targetString);
         if(target) {
@@ -523,4 +638,77 @@ public HandleBotGoalEntity(entity) {
             set_pev(entity, pev_button, pev(entity, pev_button) | IN_USE);
         }
     }
+
+    for(new iGlobalGoal = 0; iGlobalGoal < MAX_GLOBAL_GOALS; iGlobalGoal++) {
+        if(g_global_goals[iGlobalGoal])
+            continue;
+        
+        g_global_goals[iGlobalGoal] = entity;
+        break;
+    }
+}
+
+public watch_goal(iPlayer) {
+    g_goal_watcher[iPlayer] = !g_goal_watcher[iPlayer];
+    if(!g_goal_watcher[iPlayer])
+        return PLUGIN_HANDLED;
+    
+    client_print(iPlayer, print_chat, "You are now tracking the bot goal. Type /goal to stop.");
+    return PLUGIN_HANDLED;
+}
+
+draw_goal_beam(iReceiver, iFrom, iTo) {
+    message_begin(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, _, iReceiver);
+    write_byte(TE_BEAMENTPOINT);
+    write_short(iFrom); // start entity
+    new Float:origin[3];
+    pev(iTo, pev_origin, origin);
+    write_coord(floatround(origin[0]));
+    write_coord(floatround(origin[1]));
+    write_coord(floatround(origin[2]));
+    write_short(g_beam_sprite); // sprite index
+    write_byte(1); // framestart
+    write_byte(1); // framerate
+    write_byte(floatround(g_goal_watch_interval * 10.0)); // life in 0.1's
+    write_byte(10); // width
+    write_byte(0); // noise
+    write_byte(255); // red
+    write_byte(0); // green
+    write_byte(255); // blue
+    write_byte(255); // brightness
+    write_byte(0); // speed
+    message_end(); 
+}
+
+public goal_watch_think() {
+    for(new iPlayer = 1; iPlayer <= get_maxplayers(); iPlayer++) {
+        if(!g_goal_watcher[iPlayer])
+            continue;
+        
+        if(!is_user_connected(iPlayer)) {
+            g_goal_watcher[iPlayer] = false;
+            continue;
+        }
+
+        new iBot = iPlayer;
+        if(pev(iPlayer, pev_iuser1)) {
+            iBot = pev(iPlayer, pev_iuser2);
+            if(!iBot)
+                continue;
+        }
+
+        if(g_player_goals[iBot] != 0)
+            draw_goal_beam(iPlayer, iBot, g_player_goals[iBot]);
+        
+        for(new iGlobalGoal = 0; iGlobalGoal < MAX_GLOBAL_GOALS; iGlobalGoal++) {
+            if(!g_global_goals[iGlobalGoal])
+                break;
+
+            draw_goal_beam(iPlayer, iBot, g_global_goals[iGlobalGoal]);
+        }
+    }
+}
+
+public client_putinserver(iPlayer) {
+    g_goal_watcher[iPlayer] = false;
 }

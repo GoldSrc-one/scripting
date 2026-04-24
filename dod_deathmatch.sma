@@ -11,7 +11,7 @@ new g_dod = -1;
 new bool:g_active = true;
 
 public plugin_init() {
-    register_plugin("DOD deathmatch", __DATE__, "GoldSrc.one");
+    register_plugin("DoD deathmatch", __DATE__, "GoldSrc.one");
 
     g_active = IsMapDeathmatchOrFy();
     if(!g_active)
