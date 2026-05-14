@@ -7,7 +7,7 @@
         "weapon_crossbow": "ammo_crossbow",
         "weapon_rpg": "ammo_rpgclip",
         "weapon_gauss": "ammo_gaussclip",
-        "weapon_egon": "ammo_egonclip"
+        "weapon_egon": "ammo_gaussclip"
     },
     "cstrike": {
         "weapon_usp": "ammo_45acp",
@@ -43,8 +43,8 @@
         "weapon_crossbow": "ammo_crossbow",
         "weapon_rpg": "ammo_rpgclip",
         "weapon_gauss": "ammo_gaussclip",
-        "weapon_egon": "ammo_egonclip",
-        "weapon_displacer": "ammo_egonclip",
+        "weapon_egon": "ammo_gaussclip",
+        "weapon_displacer": "ammo_gaussclip",
         "weapon_eagle": "ammo_eagleclip",
         "weapon_m249": "ammo_556",
         "weapon_sniperrifle": "ammo_762",
