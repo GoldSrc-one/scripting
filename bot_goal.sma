@@ -438,12 +438,13 @@ bool:cstrike_find_goal(iPlayer, Float:origin[3]) {
             new Float:player_origin[3];
             pev(iPlayer, pev_origin, player_origin);
             pev(c4, pev_origin, origin);
+            if(team == 2)
+                return true;
+
             new Float:dist = get_distance_f(player_origin, origin);
-            if(dist <= 1250) {
-                if(team == 1 && g_player_goals[iPlayer]) {
-                    set_pev(g_player_goals[iPlayer], pev_aiment, c4);
-                    set_pev(g_player_goals[iPlayer], pev_button, IN_USE | IN_DUCK);
-                }
+            if(team == 1 && dist <= 1250 && g_player_goals[iPlayer]) {
+                set_pev(g_player_goals[iPlayer], pev_aiment, c4);
+                set_pev(g_player_goals[iPlayer], pev_button, IN_USE | IN_DUCK);
                 return true;
             }
         }
