@@ -4,7 +4,6 @@
 #include "crossplay"
 
 new g_bots_max;
-//new g_bots_melee;
 new g_bot_difficulty;
 new g_valve = -1;
 new g_gearbox = -1;
@@ -29,7 +28,6 @@ public plugin_precache() {
     register_plugin("Bots", __DATE__, "GoldSrc.one");
 
     g_bots_max = register_cvar("bots_max", "8");
-    //g_bots_melee = register_cvar("bots_melee", "0");
     g_bot_difficulty = get_cvar_pointer("bot_difficulty");
     if(!g_bot_difficulty)
         g_bot_difficulty = register_cvar("bot_difficulty", "Normal");
@@ -50,7 +48,7 @@ public plugin_init() {
 
     g_valve = GetGameIndex("valve");
     if(g_valve != -1)
-        g_ratios[g_valve] = random_float(15.0, 25.0);
+        g_ratios[g_valve] = random_float(10.0, 20.0);
 
     g_cstrike = GetGameIndex("cstrike");
     if(g_cstrike != -1)
@@ -58,9 +56,11 @@ public plugin_init() {
 
     g_gearbox = GetGameIndex("gearbox");
     if(g_gearbox != -1)
-        g_ratios[g_gearbox] = random_float(15.0, 25.0);
+        g_ratios[g_gearbox] = random_float(10.0, 20.0);
         
     g_dmc = GetGameIndex("dmc");
+    if(g_dmc != -1)
+        g_ratios[g_dmc] = random_float(5.0, 15.0);
 
     g_tfc = GetGameIndex("tfc");
     if(g_tfc != -1)
@@ -223,6 +223,7 @@ bool:getGameAbbr(iGame, gameAbbr[16]) {
     gameAbbr = "";
     if(iGame == g_valve) { gameAbbr = "HL"; return true; }
     if(iGame == g_gearbox) { gameAbbr = "OP4"; return true; }
+    if(iGame == g_dmc) { gameAbbr = "DMC"; return true; }
     if(iGame == g_cstrike) { gameAbbr = "CS"; return true; }
     if(iGame == g_tfc) { gameAbbr = "TFC"; return true; }
     if(iGame == g_dod) { gameAbbr = "DOD"; return true; }
@@ -273,9 +274,6 @@ public bots_menu(player_id) {
     new changeBotNoGoal[64];
     format(changeBotNoGoal, 64, "%s bots picking up bombs and flags", g_nogoal ? "Allow" : "Prevent");
     menu_additem(menu, changeBotNoGoal);
-    /*new melee[64];
-    format(melee, 64, "Crowbars vs knives (now: %s)", get_pcvar_num(g_bots_melee) ? "On" : "Off");
-    menu_additem(menu, melee);*/
     menu_display(player_id, menu);    
     return PLUGIN_HANDLED;
 }
@@ -335,13 +333,6 @@ public bots_menu_handler(player_id, menu, item) {
         format(menuTitle, 256, "%s bots picking up bombs and flags? %s has started the vote.", g_nogoal ? "Allow" : "Prevent", playerName);
         vote_menu(player_id, menuTitle, "toggle_nogoal");
     }
-    /*if(item == 3) {
-        new playerName[64];
-        get_user_name(player_id, playerName, 64);
-        new menuTitle[256];
-        format(menuTitle, 256, "%s ^"crowbars vs knives^"? %s has started the vote.", get_pcvar_num(g_bots_melee) ? "Disable" : "Enable", playerName);
-        vote_menu(player_id, menuTitle, "toggle_melee");
-    }*/
     return PLUGIN_HANDLED;
 }
 
@@ -518,12 +509,6 @@ public toggle_nogoal() {
     g_nogoal = !g_nogoal;
 }
 
-/*public toggle_melee() {
-    new newMelee = 1 - get_pcvar_num(g_bots_melee);
-    ANNOUNCE(g_votePlayerId, "%s has %s ^"crowbars vs knives^"", newMelee ? "enabled" : "disabled");
-    set_pcvar_num(g_bots_melee, newMelee);
-}*/
-
 pick_a_game(game_counts[], sign) {
     new minGame = -1;
     new Float:minCount;
@@ -544,19 +529,6 @@ pick_a_game(game_counts[], sign) {
 
 new g_last_difficulty = -1;
 new bool:g_evict = false;
-//new g_last_melee = -1;
-
-all_jk_botti_cmd(cmd[]) {
-    if(g_valve != -1)
-        jk_botti_cmd(g_valve, cmd);
-
-    if(g_gearbox != -1)
-        jk_botti_cmd(g_gearbox, cmd);
-}
-
-jk_botti_cmd(iGameDll, cmd[]) {
-    server_cmd("jk_botti#%d %s", iGameDll, cmd);
-}
 
 kick_bot(bot_id, bot_game, const reason[]) {
     server_print("Kicking a bot... (%s)", reason);
@@ -571,13 +543,22 @@ kick_bot(bot_id, bot_game, const reason[]) {
     }
 }
 
-public bots_think() {
-    new jk_buffer[256];
+set_parabot_difficulty(difficulty) {
+    new min = difficulty * 3;
+    new max = (difficulty + 1) * 3;
+    if(min <= 0)
+        min = 1;
+    if(max > 10)
+        max = 10;
+    
+    set_cvar_num("bot_minaimskill", min);
+    set_cvar_num("bot_maxaimskill", max);
+}
 
+public bots_think() {
     new difficulty = get_pcvar_num(g_bot_difficulty);
     if(difficulty != g_last_difficulty) {
-        format(jk_buffer, 256, "botskill %d", 4 - difficulty);
-        all_jk_botti_cmd(jk_buffer);
+        set_parabot_difficulty(difficulty);
 
         server_cmd("bot ^"botskill_lower %d^"", 5 - difficulty);
         server_cmd("bot ^"botskill_upper %d^"", 4 - difficulty);
@@ -588,30 +569,6 @@ public bots_think() {
         g_last_difficulty = difficulty;
         g_evict = true;
     }
-    /*new melee = get_pcvar_num(g_bots_melee);
-    if(melee != g_last_melee) {
-        if(melee) {
-            server_cmd("bot_knives_only");
-            new weapons[][] = {"weapon_handgrenade", "weapon_snark", "weapon_egon", "weapon_gauss", "weapon_shotgun", "weapon_357", "weapon_hornetgun", "weapon_9mmAR", "weapon_crossbow", "weapon_rpg", "weapon_9mmhandgun",
-                "weapon_eagle", "weapon_m249", "weapon_displacer", "weapon_shockrifle", "weapon_sporelauncher", "weapon_sniperrifle"};
-            
-            for(new i = 0; i < sizeof weapons; i++) {
-                format(jk_buffer, 256, "botweapon %s avoid_this_gun 1", weapons[i]);
-                all_jk_botti_cmd(jk_buffer);
-            }
-            for(new i = 1; i <= 5; i++) {
-                format(jk_buffer, 256, "bot_skill_setup %d keep_optimal_dist 100", i);
-                all_jk_botti_cmd(jk_buffer);
-                format(jk_buffer, 256, "bot_skill_setup %d battle_strafe 0", i);
-                all_jk_botti_cmd(jk_buffer);
-            }
-        } else {
-            server_cmd("bot_all_weapons");
-            all_jk_botti_cmd("botweapon reset");
-            all_jk_botti_cmd("bot_skill_setup reset");
-        }
-        g_last_melee = melee;
-    }*/
 
     new total_players;
     new total_bots;
@@ -651,9 +608,8 @@ public bots_think() {
                 new csTeamAdd[][] = {"bot_add", "bot_add_ct", "bot_add_t"};
                 server_cmd(csTeamAdd[g_teams[addGame]]);
             }
-            if(addGame == g_valve || addGame == g_gearbox) {
-                new jkTeamAdd[][] = {"addbot UNASSIGNED", "addbot BLUE", "addbot RED"};
-                jk_botti_cmd(addGame, jkTeamAdd[g_teams[addGame]]);
+            if(addGame == g_valve || addGame == g_gearbox || addGame == g_dmc) {
+                server_cmd("add_bot#%d", addGame);
             }
             if(addGame == g_tfc) {
                 server_cmd("bot ^"addbot %d^"", g_teams[addGame]);
