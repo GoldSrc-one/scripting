@@ -517,7 +517,7 @@ public DeleteWeaponbox() {
     }
 
     if(contain(classname, "ammo_") == 0 || contain(classname, "item_") == 0 || contain(classname, "weapon_") == 0) {
-        if(!(pev(g_equip_item, pev_spawnflags) & SF_NORESPAWN)) {
+        if(!(pev(g_equip_item, pev_spawnflags) & SF_NORESPAWN) && GetEntityOwner(g_equip_item) == GetEntityOwner(0)) {
             set_pev(g_equip_item, pev_effects, pev(g_equip_item, pev_effects) | EF_NODRAW);
             set_pev(g_equip_item, pev_solid, SOLID_NOT);
             set_task(contain(classname, "item_") == 0 ? 30.0 : 20.0, "Respawn", g_equip_item);
@@ -525,7 +525,7 @@ public DeleteWeaponbox() {
         }
     }
 
-    if(equal(classname, "weaponbox") || equal(classname, "weapon_shield") || equal(classname, "tf_ammobox") || equal(classname, "ammo_generic_", 13)) {
+    if(equal(classname, "weaponbox") || equal(classname, "weapon_shield") || equal(classname, "item_backpack") || equal(classname, "tf_ammobox") || equal(classname, "ammo_generic_", 13)) {
         //delete the original weaponbox by mere thought
         fm_call_think(g_equip_item);
     }
@@ -542,9 +542,8 @@ public DeleteWeaponbox() {
 
             fm_remove_entity(i);
         }
+        fm_remove_entity(g_equip_item);
     }
-
-    fm_remove_entity(g_equip_item);
 }
 
 public TouchPre(touched, other) {
@@ -661,7 +660,7 @@ public OnWeaponboxCreate(entity) {
         pev(i, pev_classname, classname, 32);
     }
 
-    //server_print("weaponbox: %s", classname);
+    //server_print("weaponbox: %d %s", entity, classname);
 
     PreparePickup(entity, classname);
 }
@@ -676,6 +675,7 @@ public OnDmcBackpackCreate(entity) {
         return;
 
     pev(entity, pev_netname, netname, 32);
+    //server_print("OnDmcBackpackCreate: %d %s", entity, netname);
 
     if(equal(netname, "Double-barrelled Shotgun"))
         PreparePickup(entity, "weapon_supershotgun");
@@ -703,6 +703,7 @@ public OnItemMaterialize(entity) {
         return;
     
     LoadWeaponModelIndices();
+    //server_print("OnItemMaterialize: %d %s", entity, classname);
     PreparePickup(entity, classname);
 }
 
