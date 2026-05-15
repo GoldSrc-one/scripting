@@ -1090,7 +1090,7 @@ public GiveAmmo(){
         given |= give_item_times("ammo_rpgclip", (g_give_rockets + 1) / 2);
         given |= give_item_times("ammo_crossbow", (g_give_rockets + 3) / 5);
         given |= give_item_times("ammo_ARgrenades", (g_give_rockets + 1) / 2);
-        given |= give_item_times("ammo_egonclip", (g_give_cells + 10) / 20);
+        given |= give_item_times("ammo_gaussclip", (g_give_cells + 10) / 20);
     }
     if(playerOwner == g_gearbox) {
         given |= give_item_times("ammo_556", (g_give_shells + 25) / 50);
