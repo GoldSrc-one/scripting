@@ -47,6 +47,27 @@ stock GetGameIndex(const game[]) {
 }
 
 /**
+ * Get game abbreviation by name (gamedir).
+ * @param game           Game name (gamedir)
+ * @param abbr           Game name abbreviation (out)
+ * @param abbrLen        Output array length
+ *
+ * @return               True if abbreviation has been found.
+ */
+stock bool:GetGameAbbr(const game[], abbr[], abbrLen) {
+    if(equal(game, "cstrike")) { copy(abbr, abbrLen, "CS");  return true; }
+    if(equal(game, "czero"))   { copy(abbr, abbrLen, "CZ");  return true; }
+    if(equal(game, "dmc"))     { copy(abbr, abbrLen, "DMC"); return true; }
+    if(equal(game, "dod"))     { copy(abbr, abbrLen, "DOD"); return true; }
+    if(equal(game, "gearbox")) { copy(abbr, abbrLen, "OP4"); return true; }
+    if(equal(game, "tfc"))     { copy(abbr, abbrLen, "TFC"); return true; }
+    if(equal(game, "valve"))   { copy(abbr, abbrLen, "HL");  return true; }
+
+    copy(abbr, abbrLen, game);
+    return false;
+}
+
+/**
  * Get index of the game that owns this entity.
  *
  * @param entityIndex    Entity number.

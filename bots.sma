@@ -220,14 +220,8 @@ public vote_menu_cancel(task_id) {
 }
 
 bool:getGameAbbr(iGame, gameAbbr[16]) {
-    gameAbbr = "";
-    if(iGame == g_valve) { gameAbbr = "HL"; return true; }
-    if(iGame == g_gearbox) { gameAbbr = "OP4"; return true; }
-    if(iGame == g_dmc) { gameAbbr = "DMC"; return true; }
-    if(iGame == g_cstrike) { gameAbbr = "CS"; return true; }
-    if(iGame == g_tfc) { gameAbbr = "TFC"; return true; }
-    if(iGame == g_dod) { gameAbbr = "DOD"; return true; }
-    return false;
+    GetGameName(iGame, gameAbbr, 16);
+    return GetGameAbbr(gameAbbr, gameAbbr, 16);
 }
 
 getRatiosString(const Float:ratios[]) {
