@@ -305,6 +305,24 @@ FindRandom(const classnames[][], numClassnames) {
     return 0;
 }
 
+FindClosest(const Float:origin[3], const classnames[][], numClassnames) {
+    new Float:minDist = 99999.9;
+    new closest = 0;
+    for(new iClassname = 0; iClassname < numClassnames; iClassname++) {        
+        new ent = 0;
+        while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", classnames[iClassname]))) {
+            new Float:entCenter[3];
+            GetEntityCenter(ent, entCenter);
+            new Float:dist = get_distance_f(origin, entCenter);
+            if(dist < minDist) {
+                minDist = dist;
+                closest = ent;
+            }
+        }
+    }
+    return closest;
+}
+
 bool:FindDistantRandom(iPlayer, Float:origin[3], const classnames[][], numClassnames) {
     // keep the current goal if we are still far away from it
     if(g_player_goals[iPlayer]) {
@@ -543,6 +561,17 @@ public FindDodClosestPoint() {
         if(dist < minDist) {
             minDist = dist;
             closestPoint = areaOrObject;
+        }
+    }
+
+    if(!closestPoint) {
+        new enemySpawnClassnames[2][1][32] = {{"info_player_axis"}, {"info_player_allies"}};
+        new enemySpawn = FindRandom(enemySpawnClassnames[playerTeam], 1);
+        if(enemySpawn) {
+            new Float:enemySpawnOrigin[3];
+            pev(enemySpawn, pev_origin, enemySpawnOrigin);
+            new enemyInterestClassnames[][] = {"dod_control_point", "dod_capture_area"};
+            closestPoint = FindClosest(enemySpawnOrigin, enemyInterestClassnames, sizeof(enemyInterestClassnames));
         }
     }
 
