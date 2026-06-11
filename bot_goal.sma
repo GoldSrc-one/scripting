@@ -305,24 +305,6 @@ FindRandom(const classnames[][], numClassnames) {
     return 0;
 }
 
-FindClosest(const Float:origin[3], const classnames[][], numClassnames) {
-    new Float:minDist = 99999.9;
-    new closest = 0;
-    for(new iClassname = 0; iClassname < numClassnames; iClassname++) {        
-        new ent = 0;
-        while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", classnames[iClassname]))) {
-            new Float:entCenter[3];
-            GetEntityCenter(ent, entCenter);
-            new Float:dist = get_distance_f(origin, entCenter);
-            if(dist < minDist) {
-                minDist = dist;
-                closest = ent;
-            }
-        }
-    }
-    return closest;
-}
-
 bool:FindDistantRandom(iPlayer, Float:origin[3], const classnames[][], numClassnames) {
     // keep the current goal if we are still far away from it
     if(g_player_goals[iPlayer]) {
@@ -500,8 +482,11 @@ dod_find_object(const Float:playerOrigin[3], playerTeam) {
 
     new ent = 0;
     while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "dod_object"))) {
+        if(pev(ent, pev_effects) & EF_NODRAW)
+            continue;
+
         new m_iTeam = get_pdata_int(ent, 85);
-        if(m_iTeam != playerTeam)
+        if(m_iTeam && 3 - m_iTeam != playerTeam)
             continue;
 
         new Float:objectOrigin[3];
@@ -531,12 +516,18 @@ public FindDodClosestPoint() {
         if(m_iTeam == playerTeam)
             continue;
 
+        new m_bTeamsCantTouch = get_pdata_int(ent, 556);
+        new myTeamCantTouch = (m_bTeamsCantTouch >> (8 * (playerTeam - 1))) & 0xFF;
+        if(myTeamCantTouch)
+            continue;
+
         new Float:pointOrigin[3];
         pev(ent, pev_origin, pointOrigin);
         new Float:dist = get_distance_f(playerOrigin, pointOrigin);
         if(dist < minDist) {
             minDist = dist;
             closestPoint = ent;
+            //server_print("going for closest point %d %f", closestPoint, minDist);
         }
     }
     
@@ -554,6 +545,8 @@ public FindDodClosestPoint() {
         new m_bRequiresObject = (get_pdata_int(ent, 714) & 0xFF);
         if(m_bRequiresObject && !g_dod_players_have_objects[gPlayer])
             areaOrObject = dod_find_object(playerOrigin, playerTeam);
+        if(!areaOrObject)
+            continue;
             
         new Float:center[3];
         GetEntityCenter(areaOrObject, center);
@@ -561,17 +554,56 @@ public FindDodClosestPoint() {
         if(dist < minDist) {
             minDist = dist;
             closestPoint = areaOrObject;
+            //server_print("going for closest area %d %f", closestPoint, minDist);
         }
     }
 
     if(!closestPoint) {
+        while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "func_breakable"))) {
+            if(pev(ent, pev_solid) == SOLID_NOT)
+                continue;
+
+            new spawnflags = pev(ent, pev_spawnflags);
+            if(!(spawnflags & 0x40) || !(spawnflags & (8 << playerTeam)))
+                continue;
+            
+            new breakableOrObject = ent;
+            if(!g_dod_players_have_objects[gPlayer])
+                breakableOrObject = dod_find_object(playerOrigin, playerTeam);
+            if(!breakableOrObject)
+                continue;
+
+            new Float:center[3];
+            GetEntityCenter(breakableOrObject, center);
+            new Float:dist = get_distance_f(playerOrigin, center);
+            if(dist < minDist) {
+                minDist = dist;
+                closestPoint = breakableOrObject;
+                //server_print("going for closest breakable %d %f", closestPoint, minDist);
+            }
+        }
+    }
+
+    if(!closestPoint && playerTeam > 0 && playerTeam < 3) {
         new enemySpawnClassnames[2][1][32] = {{"info_player_axis"}, {"info_player_allies"}};
-        new enemySpawn = FindRandom(enemySpawnClassnames[playerTeam], 1);
+        new enemySpawn = FindRandom(enemySpawnClassnames[playerTeam - 1], 1);
         if(enemySpawn) {
             new Float:enemySpawnOrigin[3];
             pev(enemySpawn, pev_origin, enemySpawnOrigin);
-            new enemyInterestClassnames[][] = {"dod_control_point", "dod_capture_area"};
-            closestPoint = FindClosest(enemySpawnOrigin, enemyInterestClassnames, sizeof(enemyInterestClassnames));
+            while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "dod_control_point"))) {
+                new m_iTeam = get_pdata_int(ent, 90);
+                if(m_iTeam != playerTeam)
+                    continue;
+
+                new Float:pointOrigin[3];
+                pev(ent, pev_origin, pointOrigin);
+                new Float:dist = get_distance_f(enemySpawnOrigin, pointOrigin);
+                if(dist < minDist) {
+                    minDist = dist;
+                    closestPoint = ent;
+                    //server_print("going for closest point to enemy %d %f", closestPoint, minDist);
+                }
+            }
         }
     }
 
