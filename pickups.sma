@@ -517,7 +517,8 @@ public DeleteWeaponbox() {
     }
 
     if(contain(classname, "ammo_") == 0 || contain(classname, "item_") == 0 || contain(classname, "weapon_") == 0) {
-        if(!(pev(g_equip_item, pev_spawnflags) & SF_NORESPAWN) && GetEntityOwner(g_equip_item) == GetEntityOwner(0)) {
+        new bool:isDmcBackpack = g_dmc != -1 && g_dmc == GetEntityOwner(g_equip_item) && equal(classname, "item_backpack");
+        if(!(pev(g_equip_item, pev_spawnflags) & SF_NORESPAWN) && GetEntityOwner(g_equip_item) == GetEntityOwner(0) && !isDmcBackpack) {
             set_pev(g_equip_item, pev_effects, pev(g_equip_item, pev_effects) | EF_NODRAW);
             set_pev(g_equip_item, pev_solid, SOLID_NOT);
             set_task(contain(classname, "item_") == 0 ? 30.0 : 20.0, "Respawn", g_equip_item);
@@ -666,7 +667,7 @@ public OnWeaponboxCreate(entity) {
 }
 
 public OnDmcBackpackCreate(entity) {
-    if(!pev_valid(entity))
+    if(!pev_valid(entity) || g_dmc == -1 || GetEntityOwner(entity) != g_dmc)
         return;
 
     new netname[32];
@@ -695,6 +696,9 @@ public OnDmcBackpackCreate(entity) {
 
 public OnItemMaterialize(entity) {
     if(!pev_valid(entity) || (pev(entity, pev_effects) & EF_NODRAW))
+        return;
+
+    if(GetEntityOwner(entity) != GetEntityOwner(0))
         return;
 
     new classname[32];
@@ -977,7 +981,7 @@ public CreateNamedEntityPost(iClassname) {
             //server_print("weapon_shield");
             PreparePickup(entity, classname);
         }
-        if(equal(classname, "item_backpack")) {
+        if(equal(classname, "item_backpack") && g_dmc != -1 && GetEntityOwner(entity) == g_dmc) {
             set_task(0.0, "OnDmcBackpackCreate", entity);
         }
     }
@@ -1197,6 +1201,9 @@ public CurWeapon(msg_id, msg_dest, entity) {
 }
 
 public SendSleeve(entity) {
+    if(GetEntityOwner(entity) != g_dod)
+        return;
+        
     message_begin(MSG_ONE, get_user_msgid("GameRules"), _, entity);
     write_byte(g_britSleeve[entity] ? 6 : 2);
     write_byte(2);
