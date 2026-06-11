@@ -524,19 +524,6 @@ pick_a_game(game_counts[], sign) {
 new g_last_difficulty = -1;
 new bool:g_evict = false;
 
-kick_bot(bot_id, bot_game, const reason[]) {
-    server_print("Kicking a bot... (%s)", reason);
-
-    if(bot_game == g_cstrike) {
-        new name[16];
-        get_user_name(bot_id, name, 16);
-        server_cmd("bot_kick ^"%s^"", name);
-    } else {
-        new userid = get_user_userid(bot_id);
-        server_cmd("kick #%d", userid);
-    }
-}
-
 set_parabot_difficulty(difficulty) {
     new min = difficulty * 3;
     new max = (difficulty + 1) * 3;
@@ -567,13 +554,20 @@ public bots_think() {
     new total_players;
     new total_bots;
     new game_counts[MAX_GAMES];
+    new team_counts[3];
     for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
         if(!is_user_connected(player_id) || is_user_hltv(player_id))
             continue;
 
+        new team = pev(player_id, pev_team);
+        team_counts[team]++;
+
         if(is_user_bot(player_id)) {
             total_bots++;
         } else {
+            if(!g_deathmatch && !team)
+                continue;
+            
             total_players++;
         }
         
@@ -615,38 +609,71 @@ public bots_think() {
     }
 
     //kick
-    new bool:kickAnyone = want_bots < total_bots || g_evict;
-    new bool:kicked = false;
-    if(kickAnyone) {
-        new kickGame = pick_a_game(game_counts, -1);
-        if(kickGame != -1) {
-            new bot_game;
-            for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-                if(!is_user_connected(player_id) || !is_user_bot(player_id))
-                    continue;
+    new kick_id = 0;
+    new kick_reason[64] = "";
+    //kick bad team
+    for(new player_id = 1; !g_deathmatch && !kick_id && player_id <= get_maxplayers(); player_id++) {
+        if(!is_user_connected(player_id) || !is_user_bot(player_id))
+            continue;
 
-                bot_game = GetEntityOwner(player_id);
-                if(bot_game == kickGame) {
-                    kick_bot(player_id, bot_game, g_evict ? "evict" : "quota");
-                    kicked = true;
-                    break;
-                }
-            }
-        }
+        new bot_game = GetEntityOwner(player_id);
+        new bot_team = pev(player_id, pev_team);
+        if(!g_teams[bot_game] || !bot_team || bot_team == g_teams[bot_game])
+            continue;
+
+        format(kick_reason, 64, "bot team #%d != game team #%d", bot_team, g_teams[bot_game]);
+        kick_id = player_id;
     }
-    if(!kicked) {
-        //kick bad team
-        for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-            if(!is_user_connected(player_id) || !is_user_bot(player_id))
-                continue;
+    //kick team balance
+    for(new player_id = 1; !g_deathmatch && !kick_id && player_id <= get_maxplayers(); player_id++) {
+        if(!is_user_connected(player_id) || !is_user_bot(player_id))
+            continue;
 
-            new bot_game = GetEntityOwner(player_id);
-            new bot_team = pev(player_id, pev_team);
-            if(kickAnyone || (g_teams[bot_game] && bot_team && bot_team != g_teams[bot_game])) {
-                kick_bot(player_id, bot_game, kickAnyone ? "anyone" : "team");
-                kicked = true;
-                break;
-            }
+        new bot_team = pev(player_id, pev_team);
+        if(!bot_team)
+            continue;
+
+        new other_team = 3 - bot_team;
+        if(team_counts[bot_team] - 1 <= team_counts[other_team])
+            continue;
+
+        format(kick_reason, 64, "team #%d count > team #%d count (%d > %d)", bot_team, other_team, team_counts[bot_team], team_counts[other_team]);
+        kick_id = player_id;
+    }
+    //kick game balance
+    new bool:kickAnyone = want_bots < total_bots || g_evict;
+    new kickGame = pick_a_game(game_counts, -1);
+    for(new player_id = 1; kickAnyone && kickGame != -1 && !kick_id && player_id <= get_maxplayers(); player_id++) {
+        if(!is_user_connected(player_id) || !is_user_bot(player_id))
+            continue;
+
+        if(GetEntityOwner(player_id) != kickGame)
+            continue;
+        
+        new gameName[16];
+        GetGameName(kickGame, gameName, 16);
+        format(kick_reason, 64, "%s (%s)", g_evict ? "evict" : "quota", gameName);
+        kick_id = player_id;
+    }
+    //kick anyone
+    for(new player_id = 1; kickAnyone && !kick_id && player_id <= get_maxplayers(); player_id++) {
+        if(!is_user_connected(player_id) || !is_user_bot(player_id))
+            continue;
+
+        format(kick_reason, 64, "%s (any)", g_evict ? "evict" : "quota");
+        kick_id = player_id;
+    }
+
+    if(kick_id) {
+        server_print("Kicking a bot... (%s)", kick_reason);
+
+        if(GetEntityOwner(kick_id) == g_cstrike) {
+            new name[16];
+            get_user_name(kick_id, name, 16);
+            server_cmd("bot_kick ^"%s^"", name);
+        } else {
+            new userid = get_user_userid(kick_id);
+            server_cmd("kick #%d", userid);
         }
     }
 }
