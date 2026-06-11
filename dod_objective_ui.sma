@@ -11,6 +11,7 @@ const Float:fadeTime = 0.125;
 const maxPoints = 21;
 new g_points[maxPoints];
 new g_numPoints = 0;
+new g_maxPointIndex = 0;
 new g_areas[maxPoints];
 new g_prefixLen = 0;
 
@@ -36,10 +37,10 @@ public KeyValuePost(entity, kvd) {
     new value[8];
     get_kvd(kvd, KV_Value, value, 8);
     new index = str_to_num(value);
-    if(index < 0 || index >= maxPoints) {
-        server_print("Bad point_index: %d (^"%s^")", index, value);
-        return FMRES_IGNORED;
-    }
+    if(index < 0 || index >= maxPoints)
+        index = g_maxPointIndex + 1;
+    if(index > g_maxPointIndex)
+        g_maxPointIndex = index;
 
     g_points[index] = entity;
 
@@ -51,7 +52,7 @@ public plugin_init() {
         return;
     
     new pointPrefix[64] = {};
-    for(new iPoint = 0; iPoint < maxPoints; iPoint++) {
+    for(new iPoint = 0; iPoint <= g_maxPointIndex; iPoint++) {
         if(!g_points[iPoint])
             continue;
 
