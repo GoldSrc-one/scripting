@@ -386,7 +386,7 @@ bool:cstrike_find_goal(iPlayer, Float:origin[3]) {
                     escortingHostages++;
             }
 
-            new maxEscortHostages = max(1, g_num_hostages / g_ct_alive);
+            new maxEscortHostages = g_ct_alive ? max(1, g_num_hostages / g_ct_alive) : 1;
             if(freeHostages && escortingHostages < maxEscortHostages) {
                 new hostage;
                 if(g_player_goals[iPlayer])

@@ -1,7 +1,7 @@
 #include <amxmodx>
 #include "crossplay"
 
-const MAX_TIPS = 96;
+const MAX_TIPS = 150;
 const MAX_TIP_LEN = 256
 new g_tipCounts[MAX_GAMES];
 new g_tips[MAX_GAMES][MAX_TIPS][MAX_TIP_LEN];

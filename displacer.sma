@@ -30,12 +30,17 @@ public PostPlayerSpawn(player_id) {
 
 new bool:g_displacer = false;
 public ThinkPre(entity) {
+    new owner = pev(entity, pev_owner);
+    if(owner <= 0 || owner > get_maxplayers())
+        return FMRES_IGNORED;
+
     new classname[24]
     pev(entity, pev_classname, classname, 24);
-    if(equal(classname, "weapon_displacer")) {
-        g_displacer = true;
-        set_pev(g_target, pev_origin, g_lastSpawn[pev(entity, pev_owner)]);
-    }
+    if(!equal(classname, "weapon_displacer"))
+        return FMRES_IGNORED;
+        
+    g_displacer = true;
+    set_pev(g_target, pev_origin, g_lastSpawn[owner]);
     return FMRES_HANDLED;
 }
 
@@ -45,7 +50,7 @@ public ThinkPost(entity) {
 }
 
 public TouchPre(touched, other) {
-    if(!pev_valid(touched))
+    if(!pev_valid(touched) || other <= 0 || other > get_maxplayers())
         return FMRES_IGNORED;
 
     new classname[24];

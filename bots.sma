@@ -16,6 +16,7 @@ new Float:g_ratios[MAX_GAMES];
 new g_teams[MAX_GAMES];
 new bool:g_nogoal = false;
 new bool:g_deathmatch = true;
+new g_mapOwner = -1;
 
 const g_bots_think_task = 1;
 const g_vote_menu_task = 100;
@@ -41,6 +42,7 @@ public plugin_init() {
     register_forward(FM_CreateFakeClient, "CreateFakeClientPre", 0);
     register_forward(FM_SetClientKeyValue, "SetClientKeyValuePre", 0);
     register_forward(FM_Touch, "TouchPre", 0);
+    register_forward(FM_Touch, "TouchPost", 1);
     register_forward(FM_SetModel, "SetModelPost", 1);
     
     set_task(1.0, "bots_think", g_bots_think_task, _, _, "b");
@@ -79,12 +81,13 @@ public plugin_init() {
     set_task(0.1, "notarget_think", g_notarget_think_task, _, _, "b");
 
     g_deathmatch = IsMapDeathmatch();
+    g_mapOwner = GetEntityOwner(0);
 
-    if(GetEntityOwner(0) == g_cstrike) {
+    if(g_mapOwner == g_cstrike) {
         g_teamNames[1] = "CT";
         g_teamNames[2] = "T";
     }
-    if(GetEntityOwner(0) == g_dod) {
+    if(g_mapOwner == g_dod) {
         g_teamNames[1] = "Allies";
         g_teamNames[2] = "Axis";
     }
@@ -560,6 +563,8 @@ public bots_think() {
             continue;
 
         new team = pev(player_id, pev_team);
+        if(team < 0 || team > 2)
+            team = 0;
         team_counts[team]++;
 
         if(is_user_bot(player_id)) {
@@ -725,7 +730,31 @@ public notarget_think() {
     }
 }
 
+new Float:g_dodBreakableTakedamage = DAMAGE_NO;
+IgnoreDodBreakable(player, breakable) {
+    if(g_mapOwner != g_dod)
+        return;
+    
+    new Float:takedamage;
+    pev(breakable, pev_takedamage, takedamage);
+    if(takedamage == DAMAGE_NO || (pev(breakable, pev_spawnflags) & 0x379) == 0)
+        return;
+    
+    if(!is_user_bot(player) || GetEntityOwner(player) == g_dod || GetEntityOwner(breakable) != g_dod)
+        return;
+    
+    new classname[32];
+    pev(breakable, pev_classname, classname, 32);
+    if(!equal(classname, "func_breakable"))
+        return;
+
+    g_dodBreakableTakedamage = takedamage;
+    set_pev(breakable, pev_takedamage, DAMAGE_NO);    
+}
+
 public TouchPre(touched, other) {
+    IgnoreDodBreakable(touched, other);
+
     if(!g_nogoal)
         return FMRES_IGNORED;
 
@@ -746,6 +775,15 @@ public TouchPre(touched, other) {
         return FMRES_SUPERCEDE;
     }
 
+    return FMRES_IGNORED;
+}
+
+public TouchPost(touched, other) {
+    if(g_dodBreakableTakedamage == DAMAGE_NO)
+        return FMRES_IGNORED;
+
+    set_pev(other, pev_takedamage, g_dodBreakableTakedamage);
+    g_dodBreakableTakedamage = DAMAGE_NO;
     return FMRES_IGNORED;
 }
 
