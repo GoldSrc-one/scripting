@@ -708,7 +708,7 @@ public SpyNoTarget() {
 
 public notarget_think() {
     for(new player_id = 1; player_id <= get_maxplayers(); player_id++) {
-        if(!pev_valid(player_id) || (!is_user_alive(player_id) && pev(g_player_id, pev_deadflag) != 5))
+        if(!pev_valid(player_id) || (!is_user_alive(player_id) && pev(player_id, pev_deadflag) != 5))
             continue;
         
         new bool:notarget = false;
@@ -732,7 +732,7 @@ public notarget_think() {
 
 new Float:g_dodBreakableTakedamage = DAMAGE_NO;
 IgnoreDodBreakable(player, breakable) {
-    if(g_mapOwner != g_dod)
+    if(g_mapOwner != g_dod || !pev_valid(breakable))
         return;
     
     new Float:takedamage;
