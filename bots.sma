@@ -732,7 +732,7 @@ public notarget_think() {
 
 new Float:g_dodBreakableTakedamage = DAMAGE_NO;
 IgnoreDodBreakable(player, breakable) {
-    if(g_mapOwner != g_dod || !pev_valid(breakable))
+    if(g_mapOwner != g_dod)
         return;
     
     new Float:takedamage;
@@ -753,6 +753,9 @@ IgnoreDodBreakable(player, breakable) {
 }
 
 public TouchPre(touched, other) {
+    if(!pev_valid(touched) || !pev_valid(other))
+        return FMRES_IGNORED;
+
     IgnoreDodBreakable(touched, other);
 
     if(!g_nogoal)
