@@ -11,6 +11,7 @@ new g_dmc;
 new g_cstrike;
 new g_tfc;
 new g_dod;
+new g_map_owner;
 
 #include "pickups_gen"
 #include "pickups_ammo_gen"
@@ -87,13 +88,14 @@ public plugin_init() {
     if(g_dod != -1)
         g_ammo_offsets[g_dod] = 281;
 
+    g_map_owner = GetEntityOwner(0);
+
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         g_game = iGame;
         GameContext(iGame, "PrecacheItems");
     }
 
-    if(GetEntityOwner(0) == g_cstrike)
-        register_logevent("logevent_round_start", 2, "1=Round_Start");
+    register_logevent("logevent_round_start", 2, "1=Round_Start");
     
     set_task(0.0, "LoadWeaponModelIndices");
 }
@@ -513,12 +515,15 @@ public DeleteWeaponbox() {
         //turn armoury_entity invisible and untouchable
         set_pev(g_equip_item, pev_effects, pev(g_equip_item, pev_effects) | EF_NODRAW);
         set_pev(g_equip_item, pev_solid, SOLID_NOT);
+        //respawn armoury on deathmatch maps
+        /*if(g_map_owner != g_cstrike)
+            set_task(IsArmouryItem(g_equip_item) ? 30.0 : 20.0, "Respawn", g_equip_item);*/
         return;
     }
 
     if(contain(classname, "ammo_") == 0 || contain(classname, "item_") == 0 || contain(classname, "weapon_") == 0) {
         new bool:isDmcBackpack = g_dmc != -1 && g_dmc == GetEntityOwner(g_equip_item) && equal(classname, "item_backpack");
-        if(!(pev(g_equip_item, pev_spawnflags) & SF_NORESPAWN) && GetEntityOwner(g_equip_item) == GetEntityOwner(0) && !isDmcBackpack) {
+        if(!(pev(g_equip_item, pev_spawnflags) & SF_NORESPAWN) && GetEntityOwner(g_equip_item) == g_map_owner && !isDmcBackpack) {
             set_pev(g_equip_item, pev_effects, pev(g_equip_item, pev_effects) | EF_NODRAW);
             set_pev(g_equip_item, pev_solid, SOLID_NOT);
             set_task(contain(classname, "item_") == 0 ? 30.0 : 20.0, "Respawn", g_equip_item);
@@ -547,9 +552,27 @@ public DeleteWeaponbox() {
     }
 }
 
+/*IsArmouryItem(armoury) {
+    new model[32];
+    pev(armoury, pev_model, model, 32);
+    return equal(model, "models/w_kevlar.mdl") || equal(model, "models/w_assault.mdl");
+}*/
+
 public TouchPre(touched, other) {
-    if(IsPickupNative(touched, other) || !is_user_alive(other) || (pev(touched, pev_effects) & EF_NODRAW))
+    new isNative = IsPickupNative(touched, other);
+    new canTouch = is_user_alive(other) && !(pev(touched, pev_effects) & EF_NODRAW);
+    //respawn armoury on deathmatch maps
+    /*if(isNative && canTouch && g_map_owner != g_cstrike) {
+        new classname[32];
+        pev(touched, pev_classname, classname, 32);
+        if(equal(classname, "armoury_entity")) {
+            remove_task(touched);
+            set_task(IsArmouryItem(touched) ? 30.0 : 20.0, "Respawn", touched);
+        }
+    }*/
+    if(isNative || !canTouch) {
         return FMRES_IGNORED;
+    }
 
     if(g_pickup_ignore[touched][other] > get_gametime())
         return FMRES_SUPERCEDE;
@@ -698,7 +721,7 @@ public OnItemMaterialize(entity) {
     if(!pev_valid(entity) || (pev(entity, pev_effects) & EF_NODRAW))
         return;
 
-    if(GetEntityOwner(entity) != GetEntityOwner(0))
+    if(GetEntityOwner(entity) != g_map_owner)
         return;
 
     new classname[32];
@@ -718,7 +741,7 @@ bool:IsAmmo(const classname[]) {
     if(contain(classname, "ammo_") == 0)
         return true;
 
-    if(GetEntityOwner(0) == g_dmc)
+    if(g_map_owner == g_dmc)
         for(new iAmmo = 0; iAmmo < get_num_ammo(g_dmc); iAmmo++)
             if(equal(classname, get_ammo_classname(g_dmc, iAmmo)))
                 return true;
@@ -837,7 +860,7 @@ PrepareItemPickup(entity, const classname[]) {
 
         new bool:exactMatch = false;
         new numItems = get_num_items(iGame);
-        if(iGame == g_dmc && GetEntityOwner(0) == g_tfc)
+        if(iGame == g_dmc && g_map_owner == g_tfc)
             numItems = 4; //do not give dmc powerups in tfc
 
         for(new iItem = 0; iItem < numItems; iItem++) {
@@ -977,12 +1000,11 @@ public CreateNamedEntityPost(iClassname) {
         if(equal(classname, "weaponbox")) {
             set_task(0.0, "OnWeaponboxCreate", entity);
         }
-        if(equal(classname, "weapon_shield") || equal(classname, "ammo_generic_", 13)) {
-            //server_print("weapon_shield");
-            PreparePickup(entity, classname);
-        }
-        if(equal(classname, "item_backpack") && g_dmc != -1 && GetEntityOwner(entity) == g_dmc) {
+        else if(equal(classname, "item_backpack") && g_dmc != -1 && GetEntityOwner(entity) == g_dmc) {
             set_task(0.0, "OnDmcBackpackCreate", entity);
+        }
+        else if(equal(classname, "ammo_", 5) || equal(classname, "item_", 5) || equal(classname, "weapon_", 7)) {
+            PreparePickup(entity, classname);
         }
     }
     return FMRES_HANDLED;
@@ -1016,11 +1038,18 @@ public EmitSoundPost(entity, channel, const sample[], Float:volume, attenuation,
     return FMRES_IGNORED;
 }
 
+/*new g_armoury;
+public RespawnArmoury() {
+    set_pdata_int(g_armoury, 35, get_pdata_int(g_armoury, 36));
+    new armouryIndex = get_pdata_int(entity, 34);
+    PreparePickup(entity, g_cstrike_armoury_classname[armouryIndex]);
+}*/
+
 public Respawn(entity) {
     if(!pev_valid(entity) || !(pev(entity, pev_effects) & EF_NODRAW))
         return;
 
-    if(GetEntityOwner(0) == g_dmc) {
+    if(g_map_owner == g_dmc) {
         engfunc(EngFunc_EmitSound, entity, CHAN_WEAPON, "items/itembk2.wav", 1.0, ATTN_NORM, 0, 100);
     } else {
         engfunc(EngFunc_EmitSound, entity, CHAN_WEAPON, "items/suitchargeok1.wav", 1.0, ATTN_NORM, 0, 150);
@@ -1031,6 +1060,13 @@ public Respawn(entity) {
     pev(entity, pev_origin, origin);
     engfunc(EngFunc_SetOrigin, entity, origin);
 
+    /*new classname[32];
+    pev(entity, pev_classname, classname, 32);
+    if(equal(classname, "armoury_entity")) {
+        g_armoury = entity;
+        GameContext(g_cstrike, "RespawnArmoury");
+    }*/
+
     OnItemMaterialize(entity);
 }
 
@@ -1039,9 +1075,12 @@ public logevent_round_start() {
     new classname[32];
     new numEntities = global_get(glb_maxEntities);
     for (new entity = get_maxplayers() + 1; entity < numEntities; entity++) {
-        unset_entity_pickup(entity);
+        if (!pev_valid(entity)) {
+            unset_entity_pickup(entity);
+            continue;
+        }
 
-        if (!pev_valid(entity))
+        if(GetEntityOwner(entity) != g_cstrike)
             continue;
         
         pev(entity, pev_classname, classname, 32);
