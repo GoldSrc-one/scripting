@@ -9,9 +9,7 @@ new g_oldAllowMonsters = 0;
 new g_valve;
 new g_gearbox;
 
-const maxMonsters = 32;
-new g_numMonsters;
-new g_monsters[maxMonsters];
+new g_apache;
 
 public plugin_init() {
     register_plugin("fy_pool_nightmare", __DATE__, "GoldSrc.one");
@@ -92,24 +90,12 @@ public PrecacheMonsters(){
 }
 
 public OnRoundStart() {
-    RemoveMonsters();
-
-    GameContext(g_gearbox != -1 ? g_gearbox : g_valve, "SpawnMonsters");
+    g_apache = 0;
+    set_task(0.0, "OnRoundStartDelayed");
 }
 
-RemoveMonsters() {
-    for(new i = 0; i < g_numMonsters; i++) {
-        if(!g_monsters[i])
-            continue;
-        
-        if(pev_valid(g_monsters[i])) {
-            engfunc(EngFunc_EmitSound, g_monsters[i], CHAN_STATIC, "apache/ap_rotor2.wav", 0, 0, SND_STOP, PITCH_NORM);
-
-            fm_remove_entity(g_monsters[i]);
-        }
-        g_monsters[i] = 0;
-    }
-    g_numMonsters = 0;
+public OnRoundStartDelayed() {
+    GameContext(g_gearbox != -1 ? g_gearbox : g_valve, "SpawnMonsters");
 }
 
 public SpawnMonsters() {
@@ -123,12 +109,9 @@ public SpawnMonsters() {
 }
 
 SpawnMonster(const classname[], Float:x, Float:y, Float:z, Float:yaw, bool:dropToFloor = true) {
-    if(g_numMonsters >= maxMonsters)
-        return;
-
     new entity = fm_create_entity(classname);
     if(!entity)
-        return;
+        return 0;
 
     new Float:origin[3];
     origin[0] = x;
@@ -145,7 +128,7 @@ SpawnMonster(const classname[], Float:x, Float:y, Float:z, Float:yaw, bool:dropT
 
     fm_DispatchSpawn(entity);
 
-    g_monsters[g_numMonsters++] = entity;
+    return entity;
 }
 
 SpawnLeeches() {
@@ -225,17 +208,11 @@ public OutOfBoundsCheck() {
         if(origin[2] > -72.0 && origin[2] < 192.0)
             continue;
         
-        for(new i = 0; i < g_numMonsters; i++) {
-            if(!pev_valid(g_monsters[i]))
-                continue;
-                
-            if(pev(g_monsters[i], pev_deadflag))
-                continue;
-            
+        if(g_apache && pev_valid(g_apache) && !pev(g_apache, pev_deadflag)){
             new classname[32];
-            pev(g_monsters[i], pev_classname, classname, 32)
+            pev(g_apache, pev_classname, classname, 32)
             if(equal(classname, "monster_apache"))
-                return;
+                continue;
         }
 
         GameContext(g_gearbox != -1 ? g_gearbox : g_valve, "SpawnApache");
@@ -245,5 +222,5 @@ public OutOfBoundsCheck() {
 public SpawnApache() {
     new Float:x = random(2) ? -768.0 : 512.0;
     new Float:y = random(2) ? -448.0 : 1408.0;
-    SpawnMonster("monster_apache", x, y, 256.0, random_float(-180.0, 180.0), false);
+    g_apache = SpawnMonster("monster_apache", x, y, 256.0, random_float(-180.0, 180.0), false);
 }
