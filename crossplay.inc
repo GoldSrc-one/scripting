@@ -177,6 +177,6 @@ forward GiveTFAmmo(playerIndex, shells, nails, rockets, cells);
  * Called when info_target is being Use-d.
  * Useful for custom entities that you want to trigger from a map.
  *
- * @param entity        The null entity
+ * @param entity        The info_target entity
  */
 forward TargetUse(entity, activator, caller, USE_TYPE:useType, float:value);
