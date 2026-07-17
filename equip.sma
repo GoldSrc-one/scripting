@@ -32,6 +32,13 @@ new Float:g_last_wish_ad[33];
 public plugin_init() {
     register_plugin("Equip", __DATE__, "GoldSrc.one");
 
+    register_clcmd("say wish", "wish_menu");
+    register_clcmd("say /wish", "wish_menu");
+    register_clcmd("say !wish", "wish_menu");
+    register_clcmd("say guns", "wish_menu");
+    register_clcmd("say /guns", "wish_menu");
+    register_clcmd("say !guns", "wish_menu");
+
     if(IsMapDeathmatch()) {
         g_active = false;
         return;
@@ -41,13 +48,6 @@ public plugin_init() {
     get_mapname(mapname, 64);
     if(equal(mapname, "fy_", 3) && !equal(mapname, "fy_nuketown"))
         g_pistol_only = true;
-
-    register_clcmd("say wish", "wish_menu");
-    register_clcmd("say /wish", "wish_menu");
-    register_clcmd("say !wish", "wish_menu");
-    register_clcmd("say guns", "wish_menu");
-    register_clcmd("say /guns", "wish_menu");
-    register_clcmd("say !guns", "wish_menu");
     set_task(g_wish_ad_interval, "wish_advertise_all", _, _, _, "b");
 
     g_valve = GetGameIndex("valve");
@@ -508,6 +508,11 @@ get_game_category_name(game, category) {
 }
 
 public wish_menu(player_id) {
+    if(!g_active){
+        client_print(player_id, print_chat, "/wish is unavailable on deathmatch maps");
+        return PLUGIN_HANDLED;
+    }
+
     new menu = menu_create("Wish menu", "wish_menu_handler");
 
     new game = GetEntityOwner(player_id);
