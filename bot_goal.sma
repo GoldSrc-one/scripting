@@ -42,9 +42,6 @@ public plugin_init() {
 
     new mapname[64];
     get_mapname(mapname, 64);
-    if(equal(mapname, "crossfire")) {
-        set_task(5.0, "crossfire_think", g_goal_think_task, _, _, "b");
-    }
     
     g_tfc = GetGameIndex("tfc");
     g_cstrike = GetGameIndex("cstrike");
@@ -117,32 +114,26 @@ CreateGoal() {
     return g_new_goal;
 }
 
-new g_crossfire_goal;
-public crossfire_think() {
-    new bool:active = false;
+public TargetUse(entity, activator, caller, USE_TYPE:useType, float:value) {
+    server_print("TargetUse");
 
-    new greenlight = 0;
-    greenlight = engfunc(EngFunc_FindEntityByString, greenlight, "targetname", "towers_greenlight");
-    if(greenlight && (pev(greenlight, pev_spawnflags) & SF_LIGHT_START_OFF) == 0)
-        active = true; //strike ready
-
-    new button = 0;
-    button = engfunc(EngFunc_FindEntityByString, button, "target", "fire_button_texture");
-    if(!button)
-        active = false; //button not found
-
-    if(active && !g_crossfire_goal) {
-        g_crossfire_goal = CreateGoal();
-        g_global_goals[0] = g_crossfire_goal;
-        new Float:origin[3];
-        GetEntityCenter(button, origin);
-        set_pev(g_crossfire_goal, pev_origin, origin);
+    new classname[32];
+    pev(entity, pev_classname, classname, 32);
+    if(equal(classname, "bot_goal")){
+        if(useType == USE_TYPE:USE_TOGGLE || useType == USE_TYPE:USE_OFF || (useType == USE_TYPE:USE_SET && !value)) {
+            set_pev(entity, pev_classname, "bot_goal_disabled");
+            ClassnameChanged(entity);
+            server_print("bot_goal disabled!");
+        }
     }
-    if(!active && g_crossfire_goal) {
-        fm_remove_entity(g_crossfire_goal);
-        g_crossfire_goal = 0;
-        g_global_goals[0] = 0;
+    else if(equal(classname, "bot_goal_disabled")){
+        if(useType == USE_TYPE:USE_TOGGLE || useType == USE_TYPE:USE_ON || (useType == USE_TYPE:USE_SET && value)) {
+            set_pev(entity, pev_classname, "bot_goal");
+            ClassnameChanged(entity);
+            server_print("bot_goal enabled!");
+        }
     }
+    return PLUGIN_CONTINUE;
 }
 
 FindByNetname(const netname[]) {
@@ -720,6 +711,11 @@ public watch_goal(iPlayer) {
 }
 
 draw_goal_beam(iReceiver, iFrom, iTo) {
+    new classname[32];
+    pev(iTo, pev_classname, classname, 32);
+    if(!equal(classname, "bot_goal"))
+        return;
+
     message_begin(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, _, iReceiver);
     write_byte(TE_BEAMENTPOINT);
     write_short(iFrom); // start entity
