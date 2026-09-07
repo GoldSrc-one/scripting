@@ -38,6 +38,11 @@ public ThinkPost(entity) {
 
 public FindEntityByStringPre(entity, const key[], const value[]) {
     if(g_sentry && equal(key, "classname") && equal(value, "building_teleporter")) {
+
+        new sentryTeam = get_pdata_int(g_sentry, 74);
+        //make it easier for bots from other games
+        set_pev(g_sentry, pev_team, sentryTeam);
+
         new Float:origin[3];
         pev(g_sentry, pev_origin, origin);
         do {
@@ -49,8 +54,12 @@ public FindEntityByStringPre(entity, const key[], const value[]) {
             if(!(flags & FL_MONSTER) || (flags & FL_NOTARGET) || pev(entity, pev_takedamage) == DAMAGE_NO || pev(entity, pev_deadflag) != DEAD_NO || pev(entity, pev_solid) == SOLID_NOT)
                 continue;
 
-            new owner = GetEntityOwner(entity);
-            if(owner != -1 && (owner == g_tfc || owner == g_cstrike))
+            new monsterOwner = pev(entity, pev_owner);
+            if(monsterOwner && pev(monsterOwner, pev_team) == sentryTeam)
+                continue;
+
+            new gameOwner = GetEntityOwner(entity);
+            if(gameOwner != -1 && (gameOwner == g_tfc || gameOwner == g_cstrike))
                 continue;
             
             /*new classname[24];
@@ -59,9 +68,6 @@ public FindEntityByStringPre(entity, const key[], const value[]) {
 
             break;
         } while(entity);
-
-        //make it easier for bots from other games
-        set_pev(g_sentry, pev_team, get_pdata_int(g_sentry, 74));
 
         forward_return(FMV_CELL, entity);
         return FMRES_SUPERCEDE;
