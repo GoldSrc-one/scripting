@@ -39,11 +39,19 @@ public CreateMonsterPost(entity) {
     if(!equal(classname, "monstermaker"))
         return;
 
-    new weapons = pev(owner, pev_weapons);
-    if(!weapons)
+    new _:fields[] = { pev_weapons, pev_skin, pev_body };
+    new bool:fieldSet = false;
+    for(new iField = 0; iField < sizeof(fields); iField++) {
+        new _:fieldValue = pev(owner, fields[iField]);
+        if(!fieldValue)
+            continue;
+        
+        set_pev(entity, fields[iField], fieldValue);
+        fieldSet = true;
+    }
+    if(!fieldSet)
         return;
 
     //respawn with the correct weapons
-    set_pev(entity, pev_weapons, weapons);
     fm_DispatchSpawn(entity);
 }
