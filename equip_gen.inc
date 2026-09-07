@@ -44,6 +44,20 @@ enum _:e_dmc_categories {
         e_dmc_powerups,
 }
 
+new g_dod_categories[][32] = {"allies", "axis"}
+new g_dod_allies[][32] = {"us-inf", "us-para", "brit-inf"}
+new g_dod_axis[][32] = {"axis-inf", "axis-para"}
+enum _:e_dod_categories {
+        e_dod_allies,
+        e_dod_axis,
+}
+
+new g_ricochet_categories[][32] = {"powerups"}
+new g_ricochet_powerups[][32] = {"item_powerup_triple", "item_powerup_fast", "item_powerup_hard", "item_powerup_freeze"}
+enum _:e_ricochet_categories {
+        e_ricochet_powerups,
+}
+
 const MAX_CATEGORIES = 4;
 
 get_game_categories(game) {
@@ -51,6 +65,8 @@ get_game_categories(game) {
         if (game == g_cstrike) return e_cstrike_categories;
         if (game == g_gearbox) return e_gearbox_categories;
         if (game == g_dmc) return e_dmc_categories;
+        if (game == g_dod) return e_dod_categories;
+        if (game == g_ricochet) return e_ricochet_categories;
         return 0;
 }
 
@@ -59,6 +75,8 @@ get_game_category(game, category) {
         if (game == g_cstrike) return g_cstrike_categories[category];
         if (game == g_gearbox) return g_gearbox_categories[category];
         if (game == g_dmc) return g_dmc_categories[category];
+        if (game == g_dod) return g_dod_categories[category];
+        if (game == g_ricochet) return g_ricochet_categories[category];
         new emptyString[32] = "";
         return emptyString;
 }
@@ -79,6 +97,9 @@ get_game_category_items(game, category) {
         if (game == g_dmc && category == e_dmc_nailguns) return sizeof g_dmc_nailguns;
         if (game == g_dmc && category == e_dmc_specials) return sizeof g_dmc_specials;
         if (game == g_dmc && category == e_dmc_powerups) return sizeof g_dmc_powerups;
+        if (game == g_dod && category == e_dod_allies) return sizeof g_dod_allies;
+        if (game == g_dod && category == e_dod_axis) return sizeof g_dod_axis;
+        if (game == g_ricochet && category == e_ricochet_powerups) return sizeof g_ricochet_powerups;
         return 0;
 }
 
@@ -98,6 +119,9 @@ get_game_category_item(game, category, item) {
         if (game == g_dmc && category == e_dmc_nailguns) return g_dmc_nailguns[item];
         if (game == g_dmc && category == e_dmc_specials) return g_dmc_specials[item];
         if (game == g_dmc && category == e_dmc_powerups) return g_dmc_powerups[item];
+        if (game == g_dod && category == e_dod_allies) return g_dod_allies[item];
+        if (game == g_dod && category == e_dod_axis) return g_dod_axis[item];
+        if (game == g_ricochet && category == e_ricochet_powerups) return g_ricochet_powerups[item];
         new emptyString[32] = "";
         return emptyString;
 }

@@ -1225,16 +1225,11 @@ public GiveGrenades() {
     }
 }
 
-new bool:g_britSleeve[33] = {};
-public CurWeapon(msg_id, msg_dest, entity) {
-    if(entity < 1 || entity > get_maxplayers() || GetEntityOwner(entity) != g_dod)
-        return PLUGIN_CONTINUE;
 
-    if(get_msg_arg_int(1) != 1)
+public CurWeapon(msg_id, msg_dest, entity) {
+    if(entity < 1 || entity > get_maxplayers() || GetEntityOwner(entity) != g_dod || get_msg_arg_int(1) != 1)
         return PLUGIN_CONTINUE;
-        
-    new weaponId = get_msg_arg_int(2);
-    g_britSleeve[entity] = weaponId == 0x19 || weaponId == 0x1a || weaponId == 0x1b || weaponId == 0x1f || weaponId == 0x40;
+    
     set_task(0.0, "SendSleeve", entity);
     return PLUGIN_CONTINUE;
 }
@@ -1242,9 +1237,39 @@ public CurWeapon(msg_id, msg_dest, entity) {
 public SendSleeve(entity) {
     if(GetEntityOwner(entity) != g_dod)
         return;
-        
+    
+    new viewmodel[64];
+    pev(entity, pev_viewmodel2, viewmodel, 64);
+
+    new bool:useBritSleeve = equal(viewmodel, "models/v_bren.mdl") ||
+        equal(viewmodel, "models/v_enfield.mdl") ||
+        equal(viewmodel, "models/v_enfield_scoped.mdl") ||
+        equal(viewmodel, "models/v_fairbairn.mdl") ||
+        equal(viewmodel, "models/v_mills.mdl") ||
+        equal(viewmodel, "models/v_piat.mdl") ||
+        equal(viewmodel, "models/v_sten.mdl") ||
+        equal(viewmodel, "models/v_webley.mdl");
+
+    if(!useBritSleeve) {
+        new usermodel[16];
+        get_user_info(entity, "model", usermodel, 16);
+        if(equal(usermodel, "brit-inf"))
+            useBritSleeve = !(equal(viewmodel, "models/v_30cal.mdl") ||
+                equal(viewmodel, "models/v_amerk.mdl") ||
+                equal(viewmodel, "models/v_bar.mdl") ||
+                equal(viewmodel, "models/v_bazooka.mdl") ||
+                equal(viewmodel, "models/v_colt.mdl") ||
+                equal(viewmodel, "models/v_fcarb.mdl") ||
+                equal(viewmodel, "models/v_garand.mdl") ||
+                equal(viewmodel, "models/v_greasegun.mdl") ||
+                equal(viewmodel, "models/v_grenade.mdl") ||
+                equal(viewmodel, "models/v_m1carbine.mdl") ||
+                equal(viewmodel, "models/v_spring.mdl") ||
+                equal(viewmodel, "models/v_tommy.mdl"));
+    }
+    
     message_begin(MSG_ONE, get_user_msgid("GameRules"), _, entity);
-    write_byte(g_britSleeve[entity] ? 6 : 2);
+    write_byte(useBritSleeve ? 6 : 2);
     write_byte(2);
     message_end();
 }

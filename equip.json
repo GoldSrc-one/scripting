@@ -21,5 +21,12 @@
         "nailguns": ["weapon_nailgun", "weapon_supernailgun"],
         "specials": ["weapon_grenadelauncher", "weapon_rocketlauncher", "weapon_lightning"],
         "powerups": ["item_artifact_invulnerability", "item_artifact_invisibility", "item_artifact_super_damage"]
+    },
+    "dod": {
+        "allies": ["us-inf", "us-para", "brit-inf"],
+        "axis": ["axis-inf", "axis-para"]
+    },
+    "ricochet": {
+        "powerups": ["item_powerup_triple", "item_powerup_fast", "item_powerup_hard", "item_powerup_freeze"]
     }
 }

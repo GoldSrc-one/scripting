@@ -136,6 +136,14 @@ native GetClientGame(clientIndex, game[], gameLen);
 native GetGameModelIndex(gameIndex, const model[], &bodyOffset = 0, &sequenceOffset = 0);
 
 /**
+ * Set DoD GamePlayRules (gameplay_rules_t) bool 
+ *
+ * @param offset         Byte offset into gameplay_rules_t. 
+ * @param value          Bool value to set.
+ */
+native SetDodGamePlayBool(offset, bool:value);
+
+/**
  * Called right before spawning the player.
  *
  * @param playerIndex	 Number between 1 and 32 inclusive.

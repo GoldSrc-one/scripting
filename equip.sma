@@ -9,6 +9,9 @@ new g_gearbox;
 new g_dmc;
 new g_cstrike;
 new g_tfc;
+new g_dod;
+new g_ricochet;
+new g_map_owner = -1;
 
 #include "equip_gen"
 
@@ -19,6 +22,8 @@ new g_valve_category_names[][32] = { "Pistol", "Primary", "Special", "Grenade" }
 new g_cstrike_category_names[][32] = { "T Pistol", "CT Pistol", "T Primary", "CT Primary" };
 new g_gearbox_category_names[][32] = { "Melee", "Primary", "Special", "PowerUp" };
 new g_dmc_category_names[][32] = { "Nailgun", "Special", "PowerUp" };
+new g_dod_category_names[][32] = { "Allies", "Axis" };
+new g_ricochet_category_names[][32] = { "PowerUp" };
 
 new Float:g_dmc_powerup_durations[] = {3.0, 15.0, 10.0};
 
@@ -44,17 +49,22 @@ public plugin_init() {
         return;
     }
 
-    new mapname[64];
-    get_mapname(mapname, 64);
-    if(equal(mapname, "fy_", 3) && !equal(mapname, "fy_nuketown"))
-        g_pistol_only = true;
-    set_task(g_wish_ad_interval, "wish_advertise_all", _, _, _, "b");
-
     g_valve = GetGameIndex("valve");
     g_gearbox = GetGameIndex("gearbox");
     g_dmc = GetGameIndex("dmc");
     g_cstrike = GetGameIndex("cstrike");
     g_tfc = GetGameIndex("tfc");
+    g_dod = GetGameIndex("dod");
+    g_ricochet = GetGameIndex("ricochet");
+
+    g_map_owner = GetEntityOwner(0);
+
+    new mapname[64];
+    get_mapname(mapname, 64);
+    if(g_map_owner == g_cstrike && equal(mapname, "fy_", 3) && !equal(mapname, "fy_nuketown"))
+        g_pistol_only = true;
+
+    set_task(g_wish_ad_interval, "wish_advertise_all", _, _, _, "b");
 
     for(new iGame = 0; iGame < GetNumGames(); iGame++)
         GameContext(iGame, "create_gpe");
@@ -78,6 +88,13 @@ public plugin_init() {
     if(g_dmc != -1) {
         register_forward(FM_CmdStart, "CmdStartPre", 0)
         GameContext(g_dmc, "precache_dmc_items");
+    }
+
+    if(g_dod != -1 && g_map_owner != g_dod) {
+        register_forward(FM_ClientCommand, "ClientCommandPre", 0);
+        register_forward(FM_ClientCommand, "ClientCommandPost", 1);
+        register_forward(FM_Touch, "TouchPre", 0);
+        register_forward(FM_Touch, "TouchPost", 1);
     }
 }
 
@@ -131,9 +148,11 @@ public PrePlayerSpawn(player_id) {
     if(game == g_cstrike && !is_user_connected(player_id))
         return;
 
-    if(game != g_dmc && game != g_tfc) {
+    if(game != g_dmc && game != g_tfc && game != g_ricochet)
         GameContext(game, "add_equip_prevention");
-    }
+    
+    if(game == g_dod)
+        EnterDodTeam(player_id);
 }
 
 get_wish_or_random_index(game, category) {
@@ -203,7 +222,7 @@ public equip_cstrike() {
     }
 
     if(team == 1) {
-        if(GetEntityOwner(0) == g_cstrike)
+        if(g_map_owner == g_cstrike)
             fm_give_item(g_player_id, "item_thighpack");
 
         pistolCategory = e_cstrike_ct_pistols;
@@ -423,8 +442,11 @@ public PostPlayerSpawn(player_id) {
         g_equip_gearbox[player_id] = true;
     }
 
-    if(game != g_cstrike && pev(g_player_id, pev_team) == 1 && GetEntityOwner(0) == g_cstrike)
+    if(game != g_cstrike && pev(g_player_id, pev_team) == 1 && g_map_owner == g_cstrike)
         GameContext(g_cstrike, "equip_defuser");
+        
+    if(game == g_dod)
+        ExitDodTeam();
     
     wish_advertise(player_id);
 }
@@ -485,7 +507,7 @@ public ActivateDmcPowerup() {
 }
 
 menu_addwishcategory(player_id, menu, name[]){
-    if(g_pistol_only && !equal(name, "Pistol") && !equal(name, "T Pistol") && !equal(name, "CT Pistol") && !equal(name, "Melee"))
+    if(g_pistol_only && !equal(name, "Pistol") && !equal(name, "T Pistol") && !equal(name, "CT Pistol") && !equal(name, "Melee") && !equal(name, "Allies") && !equal(name, "Axis"))
         return;
 
     new category = menu_items(menu);
@@ -503,22 +525,29 @@ get_game_category_name(game, category) {
     if(game == g_cstrike) return g_cstrike_category_names[category];
     if(game == g_gearbox) return g_gearbox_category_names[category];
     if(game == g_dmc) return g_dmc_category_names[category];
+    if(game == g_dod) return g_dod_category_names[category];
+    if(game == g_ricochet) return g_ricochet_category_names[category];
     new emptyString[32] = "";
     return emptyString;
 }
 
 public wish_menu(player_id) {
-    if(!g_active){
+    if(!g_active) {
         client_print(player_id, print_chat, "/wish is unavailable on deathmatch maps");
         return PLUGIN_HANDLED;
     }
 
+    new game = GetEntityOwner(player_id);
+    if(game == g_dod && g_map_owner == g_dod) {
+        client_print(player_id, print_chat, "/wish is unavailable for DoD players on DoD maps");
+        return PLUGIN_HANDLED;
+    }
+    
     new menu = menu_create("Wish menu", "wish_menu_handler");
 
-    new game = GetEntityOwner(player_id);
     for(new iCategory = 0; iCategory < get_game_categories(game); iCategory++)
         menu_addwishcategory(player_id, menu, get_game_category_name(game, iCategory));
-    
+
     menu_display(player_id, menu);
     return PLUGIN_HANDLED;
 }
@@ -542,7 +571,9 @@ public wish_menu_handler(player_id, menu, item) {
         copy(gameItem, 64, get_game_category_item(game, category, iGameItem));
         menu_additem(menu, gameItem);
     }
-    menu_additem(menu, "(random)");
+
+    if(game != g_dod)
+        menu_additem(menu, "(random)");
 
     g_wish_submenu[player_id] = category;
     menu_display(player_id, menu);
@@ -555,9 +586,13 @@ public wish_submenu_handler(player_id, menu, item) {
 
     if(item >= 0) {
         new category = g_wish_submenu[player_id];
-        if(item >= get_game_category_items(GetEntityOwner(player_id), category))
+        new game = GetEntityOwner(player_id);
+        if(item >= get_game_category_items(game, category))
             item = -1;
-        g_wish[player_id][category] = item;        
+        g_wish[player_id][category] = item;
+        
+        if(game == g_dod)
+            engclient_cmd(player_id, "cls_random");
     }
 
     return wish_menu(player_id);
@@ -569,6 +604,59 @@ public client_connect(player_id) {
         g_wish[player_id][iCategory] = -1;
     }
     return PLUGIN_CONTINUE;
+}
+
+new bool:g_resetDodBools = false;
+EnterDodTeam(player_id) {
+    if(GetEntityOwner(player_id) != g_dod || g_map_owner == g_dod)
+        return;
+
+    new alliesWish = g_wish[player_id][e_dod_allies];
+    new axisWish = g_wish[player_id][e_dod_axis];
+    if(alliesWish == 1)
+        SetDodGamePlayBool(2, true);
+    else if(alliesWish == 2)
+        SetDodGamePlayBool(4, true);
+    if(axisWish == 1)
+        SetDodGamePlayBool(3, true);
+
+    g_resetDodBools = true;
+}
+
+ExitDodTeam() {
+    if(!g_resetDodBools)
+        return;
+
+    SetDodGamePlayBool(2, false);
+    SetDodGamePlayBool(3, false);
+    SetDodGamePlayBool(4, false);
+    g_resetDodBools = false;
+}
+
+public ClientCommandPre(player_id) {
+    if(GetEntityOwner(player_id) != g_dod)
+        return FMRES_HANDLED;
+
+    EnterDodTeam(player_id);    
+    return FMRES_HANDLED;
+}
+
+public ClientCommandPost(player_id) {
+    ExitDodTeam();
+    return FMRES_HANDLED;
+}
+
+public TouchPre(touched, other) {
+    if(other <= 0 || other > get_maxplayers() || GetEntityOwner(other) != g_dod)
+        return FMRES_HANDLED;
+
+    EnterDodTeam(other);    
+    return FMRES_HANDLED;
+}
+
+public TouchPost(touched, other) {
+    ExitDodTeam();
+    return FMRES_HANDLED;
 }
 
 wish_advertise(player_id) {

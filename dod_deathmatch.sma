@@ -65,7 +65,7 @@ public CreateNamedEntityPre(iClassname) {
     new classname[32];
     fm_eng_get_string(iClassname, classname, 32);
 
-    if(equal(classname, "weapon_amerknife") || equal(classname, "weapon_colt") || equal(classname, "weapon_luger") || equal(classname, "weapon_spade"))
+    if(equal(classname, "weapon_amerknife") || equal(classname, "weapon_colt") || equal(classname, "weapon_gerknife") || equal(classname, "weapon_luger") || equal(classname, "weapon_spade") || equal(classname, "weapon_webley"))
         return FMRES_IGNORED;
 
     forward_return(FMV_CELL, FM_NULLENT);
