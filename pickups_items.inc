@@ -4,6 +4,7 @@ new g_gearbox_items[][32] = {"item_battery", "item_healthkit", "item_longjump"};
 new g_dmc_items[][32] = {"item_health", "item_armor1", "item_armor2", "item_armor3", "item_artifact_invisibility", "item_artifact_super_damage", "item_artifact_invulnerability"};
 new g_tfc_items[][32] = {"weaponbox"};
 new g_dod_items[][32] = {"ammo_luger", "ammo_colt", "ammo_webley"};
+new g_ricochet_items[][32] = {"item_healthkit", "item_powerup_triple", "item_powerup_freeze", "item_powerup_fast", "item_powerup_hard", "item_battery"}
 
 get_num_items(game) {
     if (game == g_valve) return sizeof(g_valve_items);
@@ -12,6 +13,7 @@ get_num_items(game) {
     if (game == g_dmc) return sizeof(g_dmc_items);
     if (game == g_tfc) return sizeof(g_tfc_items);
     if (game == g_dod) return sizeof(g_dod_items);
+    if (game == g_ricochet) return sizeof(g_ricochet_items);
     return 0;
 }
 
@@ -22,6 +24,7 @@ get_item(game, item) {
     if (game == g_dmc) return g_dmc_items[item];
     if (game == g_tfc) return g_tfc_items[item];
     if (game == g_dod) return g_dod_items[item];
+    if (game == g_ricochet) return g_ricochet_items[item];
     new emptyString[32] = "";
     return emptyString;
 }

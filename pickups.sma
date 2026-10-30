@@ -11,7 +11,9 @@ new g_dmc;
 new g_cstrike;
 new g_tfc;
 new g_dod;
+new g_ricochet;
 new g_map_owner;
+new g_deathmatch;
 
 #include "pickups_gen"
 #include "pickups_ammo_gen"
@@ -88,7 +90,10 @@ public plugin_init() {
     if(g_dod != -1)
         g_ammo_offsets[g_dod] = 281;
 
+    g_ricochet = GetGameIndex("ricochet");
+
     g_map_owner = GetEntityOwner(0);
+    g_deathmatch = IsMapDeathmatch();
 
     for(new iGame = 0; iGame < GetNumGames(); iGame++) {
         g_game = iGame;
@@ -289,6 +294,8 @@ public AddToFullPackPost(es_handle, e, ent, host, hostflags, player, pSet[]) {
                 set_es(es_handle, ES_RenderColor, {255, 128, 0});
                 set_es(es_handle, ES_RenderAmt, 100);
             }
+        } else if(hostOwner == g_ricochet) {
+            set_es(es_handle, ES_FrameRate, 1.0);
         }
     }
     if(tfcClass != -1 && equal(g_tfc_classname[tfcClass][ent], "tf_weapon_", 10) && !equal(g_tfc_classname[tfcClass][ent][strlen(g_tfc_classname[tfcClass][ent]) - 7], "grenade", 7)) {
@@ -860,8 +867,14 @@ PrepareItemPickup(entity, const classname[]) {
 
         new bool:exactMatch = false;
         new numItems = get_num_items(iGame);
-        if(iGame == g_dmc && g_map_owner == g_tfc)
-            numItems = 4; //do not give dmc powerups in tfc
+        if(!g_deathmatch){
+            //do not give dmc powerups in teamplay maps
+            if(iGame == g_dmc)
+                numItems = 4;
+            //do not give longjump in teamplay maps
+            if(iGame == g_valve || iGame == g_gearbox)
+                numItems = 2;
+        }
 
         for(new iItem = 0; iItem < numItems; iItem++) {
             if(equal(classname, get_item(iGame, iItem))) {

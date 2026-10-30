@@ -321,7 +321,6 @@ public equip_gearbox() {
     if(!g_pistol_only) {
         give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_primaries), 5);
         give_item_times(g_player_id, get_wish_or_random(g_gearbox, e_gearbox_specials), 5);
-        fm_give_item(g_player_id, "weapon_penguin");
         give_item_times(g_player_id, "item_battery", 7);
     }
 
@@ -336,7 +335,7 @@ public FindEntityByStringPre(entity, const key[], const value[]) {
     if(equal(key, "classname")) {
         if(g_player_id != -1 && equal(value, "game_player_equip")) {
             new playerOwner = GetEntityOwner(g_player_id);
-            if(playerOwner == -1 || playerOwner == g_dmc || playerOwner == g_tfc) {
+            if(playerOwner == -1 || playerOwner == g_dmc || playerOwner == g_tfc || playerOwner == g_ricochet) {
                 forward_return(FMV_CELL, 0);
             } else {
                 forward_return(FMV_CELL, entity < g_gpes[playerOwner] ? g_gpes[playerOwner] : 0);

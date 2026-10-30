@@ -37,7 +37,7 @@ new g_gearbox_pistols[][32] = {"weapon_9mmhandgun", "weapon_357", "weapon_eagle"
 new g_gearbox_shotguns[][32] = {"weapon_shotgun"}
 new g_gearbox_smgs[][32] = {"weapon_9mmAR", "weapon_m249"}
 new g_gearbox_snipers[][32] = {"weapon_crossbow", "weapon_sniperrifle"}
-new g_gearbox_grenades[][32] = {"ammo_ARgrenades", "weapon_tripmine", "weapon_satchel", "weapon_handgrenade", "weapon_snark", "weapon_penguin"}
+new g_gearbox_grenades[][32] = {"ammo_ARgrenades", "weapon_tripmine", "weapon_satchel", "weapon_handgrenade", "weapon_snark"}
 new g_gearbox_launchers[][32] = {"weapon_rpg", "weapon_hornetgun", "weapon_sporelauncher", "weapon_shockrifle"}
 new g_gearbox_energy[][32] = {"weapon_gauss", "weapon_egon", "weapon_displacer"}
 enum _:e_gearbox_categories {

@@ -6,9 +6,9 @@
 #include "crossplay"
 #include "crossplay_util"
 
-new g_dod = -1;
-
 new bool:g_active = true;
+new g_dod = -1;
+new g_maxplayers;
 
 public plugin_init() {
     register_plugin("DoD deathmatch", __DATE__, "GoldSrc.one");
@@ -18,29 +18,10 @@ public plugin_init() {
         return;
 
     g_dod = GetGameIndex("dod");
+    g_maxplayers = get_maxplayers();
     register_forward(FM_CreateNamedEntity, "CreateNamedEntityPre", 0);
-
-    //set_task(0.0, "RegisterVGUIMenu");
+    register_forward(FM_AddToFullPack, "AddToFullPackPost", 1);
 }
-
-/*public RegisterVGUIMenu() {
-    register_message(engfunc(EngFunc_RegUserMsg, "VGUIMenu", 5), "VGUIMenu");
-}
-
-public VGUIMenu(msg_id, msg_dest, entity) {
-    if(GetEntityOwner(entity) != g_dod)
-        return PLUGIN_CONTINUE;
-
-    if(get_msg_arg_int(1) <= 2)
-        return PLUGIN_CONTINUE;
-
-    set_task(0.0, "PickRandomClass", entity);
-    return PLUGIN_HANDLED;
-}
-
-public PickRandomClass(entity) {
-    engclient_cmd(entity, "cls_random");
-}*/
 
 new bool:g_suppress_equip;
 
@@ -70,4 +51,14 @@ public CreateNamedEntityPre(iClassname) {
 
     forward_return(FMV_CELL, FM_NULLENT);
     return FMRES_SUPERCEDE;
+}
+
+public AddToFullPackPost(es_handle, e, ent, host, hostflags, player, pSet[]) {
+    if(ent <= 0 && ent > g_maxplayers)
+        return FMRES_IGNORED;
+    
+    if(ent != host)
+        set_es(es_handle, ES_Team, 0);
+    
+    return FMRES_HANDLED;
 }

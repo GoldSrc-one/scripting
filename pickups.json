@@ -21,7 +21,7 @@
         "shotguns": ["weapon_shotgun"],
         "smgs": ["weapon_9mmAR", "weapon_m249"],
         "snipers": ["weapon_crossbow", "weapon_sniperrifle"],
-        "grenades": ["ammo_ARgrenades", "weapon_tripmine", "weapon_satchel", "weapon_handgrenade", "weapon_snark", "weapon_penguin"],
+        "grenades": ["ammo_ARgrenades", "weapon_tripmine", "weapon_satchel", "weapon_handgrenade", "weapon_snark"],
         "launchers": ["weapon_rpg", "weapon_hornetgun", "weapon_sporelauncher", "weapon_shockrifle"],
         "energy": ["weapon_gauss", "weapon_egon", "weapon_displacer"]
     },

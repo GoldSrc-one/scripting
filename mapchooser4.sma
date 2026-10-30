@@ -1103,6 +1103,12 @@ public handleSay(id)
 		{
 			handleNominate(id, message[5])
 		}
+		else if (equali(message, "maps")) 
+		{
+			cmdListMaps(id);
+			client_print(id, print_chat, "The list of available maps has been printed to your console.")
+			return PLUGIN_CONTINUE
+		}
 		else if (is_map_valid(message)) 
 		{
 			nominateMap(id, message)
