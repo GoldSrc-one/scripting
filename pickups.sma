@@ -335,7 +335,8 @@ fm_give_item2(index, const item[]) {
     if (!pev_valid(ent))
         return 0;
 
-    if(GetEntityOwner(g_equip_player) == g_dod) {
+    new bool:isDodPlayer = GetEntityOwner(g_equip_player) == g_dod;
+    if(isDodPlayer) {
         new dod_category, dod_item;
         if(find_weapon(g_dod, item, dod_category, dod_item) && dod_category == e_dod_snipers)
             set_pdata_int(ent, 115, get_pdata_int(ent, 115) | 1);
@@ -347,11 +348,15 @@ fm_give_item2(index, const item[]) {
     set_pev(ent, pev_spawnflags, pev(ent, pev_spawnflags) | SF_NORESPAWN);
     dllfunc(DLLFunc_Spawn, ent);
 
-    if(GetEntityOwner(g_equip_player) == g_dod)
+    if(isDodPlayer)
         set_pev(ent, pev_flags, pev(ent, pev_flags) | FL_ONGROUND);
 
     new save = pev(ent, pev_solid);
     dllfunc(DLLFunc_Touch, ent, index);
+
+    if(isDodPlayer)
+        set_pev(ent, pev_flags, pev(ent, pev_flags) & ~FL_ONGROUND);
+
     if (pev(ent, pev_solid) != save || pev(ent, pev_flags) & FL_KILLME)
         return ent;
 
