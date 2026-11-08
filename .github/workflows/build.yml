@@ -1,0 +1,54 @@
+name: Build
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    types: [opened, reopened, synchronize]
+  release:
+    types: [published]
+
+jobs:
+  linux:
+    name: 'Linux'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup AMXX + ReAPI
+        run: |
+          sudo apt-get update && sudo apt-get install -y libc6-i386
+          mkdir sdk
+          curl -sSfL https://www.amxmodx.org/amxxdrop/1.10/amxmodx-1.10.0-git5474-base-linux.tar.gz | tar xz -C sdk
+          curl -sSfLo reapi.zip https://github.com/rehlds/ReAPI/releases/download/5.26.0.338/reapi-bin-5.26.0.338.zip
+          unzip -qo reapi.zip -d sdk
+
+      - name: Compile
+        run: |
+          mkdir -p addons/amxmodx/plugins
+          failed=0
+          for sma in *.sma; do
+            (cd sdk/addons/amxmodx/scripting && ./amxxpc "$GITHUB_WORKSPACE/$sma" -iinclude "-i$GITHUB_WORKSPACE" "-o$GITHUB_WORKSPACE/addons/amxmodx/plugins/${sma%.sma}.amxx") || failed=$((failed+1))
+          done
+          [ $failed -eq 0 ] || { echo "::error::$failed plugin(s) failed to compile"; exit 1; }
+
+      - name: Create zip
+        run: zip -r plugins.zip addons
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugins
+          path: plugins.zip
+
+      - name: Publish release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: plugins.zip
